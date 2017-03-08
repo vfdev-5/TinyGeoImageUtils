@@ -1,6 +1,6 @@
 # Tiny Geographical Image Utils
 
-Reading and manipulation of geographical images. Based on GDAL
+Reading and manipulation of geographical images. Based on [GDAL](http://www.gdal.org/)
 
 ## Basic tools:
 
@@ -12,7 +12,7 @@ Reading and manipulation of geographical images. Based on GDAL
 ## Basic usage:
 
 ```
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 from gimg_utils.GeoImage import GeoImage
 
@@ -27,7 +27,7 @@ plt.show()
 and 
 
 ```
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 from gimg_utils.GeoImage import GeoImage
 from gimg_utils.GeoImage import GeoImageTilerConstSize
