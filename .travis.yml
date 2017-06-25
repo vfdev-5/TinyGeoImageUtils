@@ -1,0 +1,15 @@
+sudo: required
+dist: trusty
+language: python
+matrix:
+    include:
+        - python: 2.7
+        - python: 3.5
+install:
+  - pip install numpy
+  - pip install gdal
+  - pip install -e .[tests]
+
+# command to run tests
+script:
+  - py.test tests/
