@@ -13,5 +13,8 @@ setup(
         'numpy', 
         'GDAL'
     ],
-    test_suite="tests"
+    test_suite="tests",
+    extras_require={
+          'tests': ['pytest',]
+    }
 )
