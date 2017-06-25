@@ -7,7 +7,7 @@ matrix:
         - python: 3.5
 install:
   - pip install numpy
-  - apt-get install python-gdal  
+  - sudo apt-get install python-gdal  
   - pip install -e .[tests]
 
 # command to run tests
