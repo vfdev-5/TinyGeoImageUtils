@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+from __future__ import absolute_import
 
 # Python
 import os
@@ -12,7 +13,7 @@ import gdal
 import osgeo.osr
 import gdalconst
 
-from common import get_gdal_dtype, gdal_to_numpy_datatype
+from .common import get_gdal_dtype, gdal_to_numpy_datatype
 
 logger = logging.getLogger(__name__)
 
@@ -270,6 +271,8 @@ class GeoImage:
             return False
 
         self.projection = self._dataset.GetProjection()
+        if self.projection is None or len(self.projection) == 0:
+            return False
         # Init pixel to geo transformer :
         srs = osgeo.osr.SpatialReference()
         srs.ImportFromEPSG(4326)
