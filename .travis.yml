@@ -3,11 +3,10 @@ dist: trusty
 language: python
 matrix:
     include:
-        - python: 2.7
         - python: 3.5
 install:
   - pip install numpy
-  - sudo apt-get install python-gdal  
+  - sudo apt-get install python3-gdal  
   - pip install -e .[tests]
 
 # command to run tests
