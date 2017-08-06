@@ -1,9 +1,8 @@
+from __future__ import absolute_import
 
 import gdal
 import osr
 import numpy as np
-import argparse
-import os
 
 # Project
 from gimg_utils.common import get_gdal_dtype, get_dtype

@@ -1,6 +1,7 @@
 #
 # Some common useful functions
 #
+from __future__ import absolute_import
 
 import os
 import numpy as np

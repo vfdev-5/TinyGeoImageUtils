@@ -2,6 +2,7 @@
 #
 # Test GeoImage
 #
+from __future__ import absolute_import
 
 from unittest import TestCase, TestLoader, TextTestRunner
 import tempfile
@@ -17,7 +18,7 @@ import gdal
 # Project
 from gimg_utils.GeoImage import GeoImage
 from gimg_utils.common import get_gdal_dtype, get_dtype
-from create_synthetic_images import create
+from .create_synthetic_images import create
 
 
 class TestGeoImage(TestCase):

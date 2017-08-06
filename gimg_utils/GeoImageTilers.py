@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+from __future__ import absolute_import
 
 # Python
 import logging
@@ -7,7 +8,7 @@ import logging
 import numpy as np
 
 # Project
-from GeoImage import GeoImage
+from .GeoImage import GeoImage
 
 logger = logging.getLogger(__name__)
 
