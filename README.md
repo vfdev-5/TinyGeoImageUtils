@@ -2,6 +2,31 @@
 
 Reading and manipulation of geographical images. Based on [GDAL](http://www.gdal.org/)
 
+## Installation:
+
+### Dependencies:
+
+#### Linux
+```
+pip install numpy
+sudo apt-get install python3-gdal 
+# or 
+sudo apt-get install python-gdal
+```
+
+#### MacOSX
+
+```
+pip install numpy
+brew install gdal
+```
+
+### Repository
+
+```
+pip install git+git://github.com/vfdev-5/TinyGeoImageUtils
+```
+
 ## Basic tools:
 
 * `GeoImage` for reading geographical images 
