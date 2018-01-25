@@ -321,6 +321,7 @@ class GeoImageTilerConstSize(BaseGeoImageTiler):
         super(GeoImageTilerConstSize, self).__init__(geo_image, tile_size, scale)
         assert 0 <= min_overlapping < min(tile_size[0], tile_size[1]), \
             logger.error("minimal overlapping should be between 0 and min tile_size")
+        assert type(scale) == int, "Argument type should be integer"
 
         self.min_overlapping = min_overlapping
         h = self._geo_image.shape[0] * 1.0 / self.scale
