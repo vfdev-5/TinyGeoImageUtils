@@ -13,6 +13,7 @@ import gdal
 import osgeo.osr
 import gdalconst
 
+
 from .common import get_gdal_dtype, gdal_to_numpy_datatype
 
 logger = logging.getLogger(__name__)
@@ -428,9 +429,11 @@ def from_ndarray(data):
     h, w, nc = data.shape
     # Create a synthetic gdal dataset
     driver = gdal.GetDriverByName('MEM')
-    gdal_dtype = get_gdal_dtype(data[0, 0, 0].itemsize,
-                                data[0, 0, 0].dtype == np.complex64 or
-                                data[0, 0, 0].dtype == np.complex128)
+    itemsize = data[0, 0, 0].itemsize
+    dtype = data[0, 0, 0].dtype
+    gdal_dtype = get_gdal_dtype(itemsize,
+                                dtype == np.complex64 or dtype == np.complex128,
+                                signed=False if dtype in (np.uint8, np.uint16) else True)
     ds = driver.Create('', w, h, nc, gdal_dtype)
     for i in range(0, nc):
         ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
@@ -461,6 +464,3 @@ def update_dtype(dtype, v):
     if np.array(v).astype(dtype) != np.array(v):
         return type(v)
     return dtype
-
-
-

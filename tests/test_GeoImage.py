@@ -15,6 +15,7 @@ import numpy as np
 # GDAL
 import gdal
 
+
 # Project
 from gimg.GeoImage import GeoImage
 from gimg.common import get_gdal_dtype, get_dtype

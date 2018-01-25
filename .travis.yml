@@ -1,13 +1,17 @@
 sudo: required
-dist: trusty
 language: python
 matrix:
     include:
         - python: 3.5
+
 install:
+  - sudo apt-get -qq update
+  - sudo apt-get install libgdal-dev
+  - export CPLUS_INCLUDE_PATH=/usr/include/gdal
+  - export C_INCLUDE_PATH=/usr/include/gdal
   - pip install numpy
-  - sudo apt-get install python3-gdal  
-  - pip install -e .[tests]
+  - pip install gdal==1.10.0
+  - python setup.py install
 
 # command to run tests
 script:
