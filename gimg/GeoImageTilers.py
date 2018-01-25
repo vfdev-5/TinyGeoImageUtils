@@ -101,7 +101,8 @@ class GeoImageTiler(BaseGeoImageTiler):
         Tiles of maximum size `(tile_size[0], tile_size[1])` are extracted with a four-sided overlapping (overlapping)
 
         There are two options to produce tile:
-        a) `include_nodata=True`: All tiles have the same size `tile_size` and nodata values are filled with `nodata_value`.
+        a) `include_nodata=True`: All tiles have the same size `tile_size` and nodata values are filled with
+        `nodata_value`.
         For example, the first top-left tile starts outside the image
         <--- tile_size[0] -->
       overlapping     overlapping

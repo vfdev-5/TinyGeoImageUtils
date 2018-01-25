@@ -16,8 +16,8 @@ import numpy as np
 import gdal
 
 # Project
-from gimg_utils.GeoImage import GeoImage
-from gimg_utils.common import get_gdal_dtype, get_dtype
+from gimg.GeoImage import GeoImage
+from gimg.common import get_gdal_dtype, get_dtype
 from .create_synthetic_images import create
 
 
@@ -128,7 +128,8 @@ class TestGeoImage(TestCase):
         driver = gdal.GetDriverByName('MEM')
         gdal_dtype = get_gdal_dtype(data[0, 0, 0].itemsize,
                                     data[0, 0, 0].dtype == np.complex64 or
-                                    data[0, 0, 0].dtype == np.complex128)
+                                    data[0, 0, 0].dtype == np.complex128,
+                                    signed=False if dtype in (np.uint8, np.uint16) else True)
         ds = driver.Create('', w, h, c, gdal_dtype)
         for i in range(0, c):
             ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
@@ -149,7 +150,7 @@ class TestGeoImage(TestCase):
         self.assertEqual(data.dtype, gimage_data.dtype)
 
         # verify data
-        self.assertEqual(float(np.sum(data[:,:,select_bands] - gimage_data)), 0.0)
+        self.assertEqual(float(np.sum(data[:, :, select_bands] - gimage_data)), 0.0)
 
         
 if __name__ == "__main__":

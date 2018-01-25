@@ -17,8 +17,8 @@ def get_basename(filepath):
 
     """
     bfn = os.path.basename(filepath)
-    splt = bfn.split('.')
-    return '.'.join(splt[:-1]) if len(splt) > 1 else splt[0]
+    splt = bfn.split(os.extsep)
+    return os.extsep.join(splt[:-1]) if len(splt) > 1 else splt[0]
 
 
 def get_dtype(depth, is_complex, signed=True):
@@ -32,7 +32,7 @@ def get_dtype(depth, is_complex, signed=True):
     if depth == 1 and not is_complex:
         return np.uint8
     elif depth == 2 and not is_complex:
-        return np.uint16 if signed else np.int16
+        return np.uint16 if not signed else np.int16
     elif depth == 4 and not is_complex:
         return np.float32
     elif depth == 8 and not is_complex:
@@ -58,7 +58,7 @@ def get_gdal_dtype(depth, is_complex, signed=True):
     if depth == 1 and not is_complex:
         return gdal.GDT_Byte
     elif depth == 2 and not is_complex:
-        return gdal.GDT_UInt16 if signed else gdal.GDT_Int16
+        return gdal.GDT_UInt16 if not signed else gdal.GDT_Int16
     elif depth == 4 and not is_complex:
         return gdal.GDT_Float32
     elif depth == 8 and not is_complex:

@@ -5,7 +5,7 @@ import osr
 import numpy as np
 
 # Project
-from gimg_utils.common import get_gdal_dtype, get_dtype
+from gimg.common import get_gdal_dtype, get_dtype
 
 """
     Script to create synthetic images

@@ -9,8 +9,8 @@ from unittest import TestCase, TestLoader, TextTestRunner
 
 import numpy as np
 
-from gimg_utils.GeoImage import GeoImage
-from gimg_utils.GeoImageTilers import GeoImageTiler, GeoImageTilerConstSize
+from gimg.GeoImage import GeoImage
+from gimg.GeoImageTilers import GeoImageTiler, GeoImageTilerConstSize
 from .create_synthetic_images import create
 
 
