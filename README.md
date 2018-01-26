@@ -1,14 +1,18 @@
 # Tiny Geographical Image Utils
 
+[![Build Status](https://travis-ci.org/vfdev-5/TinyGeoImageUtils.svg?branch=master)](https://travis-ci.org/vfdev-5/TinyGeoImageUtils) 
+[![Coverage Status](https://coveralls.io/repos/vfdev-5/TinyGeoImageUtils/badge.svg?branch=master&service=github&t=nhModO)](https://coveralls.io/github/vfdev-5/TinyGeoImageUtils?branch=master)
+
+
 Reading and manipulation of geographical images. Based on [GDAL](http://www.gdal.org/)
 
 ## Installation:
 
 ### Dependencies:
 
-#### Linux
+#### Linux 
 ```
-pip install numpy
+pip install numpy click
 sudo apt-get install python3-gdal 
 # or 
 sudo apt-get install python-gdal
@@ -24,22 +28,23 @@ brew install gdal
 ### Repository
 
 ```
-pip install git+git://github.com/vfdev-5/TinyGeoImageUtils
+pip install git+https://github.com/vfdev-5/TinyGeoImageUtils.git
 ```
 
 ## Basic tools:
 
-* `GeoImage` for reading geographical images 
+### Python API
 
+* `GeoImage` for reading geographical images 
 * `GeoImageTiler` for tiled reading geographical images
 
 
-## Basic usage:
+####  Usage:
 
 ```
 import numpy as np
 import matplotlib.pyplot as plt
-from gimg.GeoImage import GeoImage
+from gimg import GeoImage
 
 gimg = GeoImage("path/to/image/file")
 np_img = gimg.get_data([0, 0, 500, 500])
@@ -54,8 +59,8 @@ and
 ```
 import numpy as np
 import matplotlib.pyplot as plt
-from gimg.GeoImage import GeoImage
-from gimg.GeoImage import GeoImageTilerConstSize
+from gimg import GeoImage
+from gimg import GeoImageTilerConstSize
 
 gimg = GeoImage("path/to/image/file")
 tiles = GeoImageTilerConstSize(gimg, tile_size=(512, 512), min_overlapping=128)
@@ -65,3 +70,11 @@ for tile, x, y in tiles:
 ```
 
 See [example.ipynb](examples/examples.ipynb) for some basic examples of usage
+
+
+### CLI 
+
+* `tile_generator`
+
+```
+> 

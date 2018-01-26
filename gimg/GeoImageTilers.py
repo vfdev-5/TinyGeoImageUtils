@@ -10,7 +10,7 @@ import numpy as np
 # Project
 from .GeoImage import GeoImage
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('gimg')
 
 
 class BaseGeoImageTiler(object):

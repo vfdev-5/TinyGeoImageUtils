@@ -1,11 +1,16 @@
 from __future__ import absolute_import
 
+import os
+
+import numpy as np
+
 import gdal
 import osr
-import numpy as np
+
 
 # Project
 from gimg.common import get_gdal_dtype, get_dtype
+from gimg.GeoImage import compute_geo_extent
 
 """
     Script to create synthetic images
@@ -52,3 +57,30 @@ def create(width, height, nb_bands, filepath, depth=2, is_complex=False, metadat
     driver = None
     return data
 
+
+def create_synthetic_image_file(local_temp_folder, shape, depth, is_complex):
+    # Create local synthetic image:
+    filepath = os.path.join(local_temp_folder, 'test_small_image.tif')
+    metadata = {'key_1': 'value_1', 'key_2': "1 2 3", 'key_3': '3'}
+    geo_transform = (13.60746033, 0.001, 0.0, 50.25013288, 0.0, -0.001)
+    geo_extent = compute_geo_extent(geo_transform, shape)
+    epsg = 4326
+    data = create(shape[1], shape[0], shape[2], filepath,
+                  depth=depth, is_complex=is_complex,
+                  metadata=metadata, geo_transform=geo_transform, epsg=epsg)
+    return filepath, data, geo_extent, metadata, geo_transform, epsg
+
+
+def create_virt_image(w, h, c, dtype):
+    # Create a synthetic gdal dataset
+    data = np.arange(0, w*h*c, dtype=dtype).reshape((h, w, c))
+    driver = gdal.GetDriverByName('MEM')
+    gdal_dtype = get_gdal_dtype(data[0, 0, 0].itemsize,
+                                data[0, 0, 0].dtype == np.complex64 or
+                                data[0, 0, 0].dtype == np.complex128,
+                                signed=False if dtype in (np.uint8, np.uint16) else True)
+    ds = driver.Create('', w, h, c, gdal_dtype)
+    for i in range(0, c):
+        ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
+    driver = None
+    return ds, data

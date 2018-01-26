@@ -1,14 +1,13 @@
 #
 # Test common module
 #
-from __future__ import absolute_import
-
 from unittest import TestCase, TestLoader, TextTestRunner
 
 import numpy as np
 import gdal
 
-from gimg.common import get_basename, get_dtype, get_gdal_dtype, gdal_to_numpy_datatype
+from gimg.common import get_basename, get_dtype, get_gdal_dtype, \
+    gdal_to_numpy_datatype, numpy_to_gdal_datatype
 
 
 class TestCommon(TestCase):
@@ -80,6 +79,26 @@ class TestCommon(TestCase):
 
         with self.assertRaises(AssertionError):
             gdal_to_numpy_datatype(1000)
+
+    def test_numpy_to_gdal_datatype(self):
+
+        types = [
+            (gdal.GDT_Byte, np.uint8),
+            (gdal.GDT_Int16, np.int16),
+            (gdal.GDT_UInt16, np.uint16),
+            (gdal.GDT_UInt32, np.uint32),
+            (gdal.GDT_Int32, np.int32),
+            (gdal.GDT_Float32, np.float32),
+            (gdal.GDT_Float64, np.float64),
+            (gdal.GDT_CFloat32, np.complex64),
+            (gdal.GDT_CFloat64, np.complex128),
+        ]
+
+        for gdal_type, dtype in types:
+            self.assertEqual(numpy_to_gdal_datatype(dtype), gdal_type)
+
+        with self.assertRaises(AssertionError):
+            numpy_to_gdal_datatype(1000)
 
 
 if __name__ == "__main__":

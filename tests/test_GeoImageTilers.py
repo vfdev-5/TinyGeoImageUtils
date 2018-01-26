@@ -1,5 +1,4 @@
 # Test GeoImageTilers
-from __future__ import absolute_import
 
 import logging
 import tempfile
@@ -9,9 +8,9 @@ from unittest import TestCase, TestLoader, TextTestRunner
 
 import numpy as np
 
-from gimg.GeoImage import GeoImage
-from gimg.GeoImageTilers import GeoImageTiler, GeoImageTilerConstSize
-from .create_synthetic_images import create
+from gimg import GeoImage
+from gimg import GeoImageTiler, GeoImageTilerConstSize
+from create_synthetic_images import create
 
 
 class TestGeoImageTiler(TestCase):

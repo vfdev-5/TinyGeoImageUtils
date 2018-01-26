@@ -1,8 +1,6 @@
 #
 # Some common useful functions
 #
-from __future__ import absolute_import
-
 import os
 import numpy as np
 import gdal
@@ -103,3 +101,29 @@ def gdal_to_numpy_datatype(gdal_datatype):
         return np.complex128
     else:
         raise AssertionError("Data type '%i' is not recognized" % gdal_datatype)
+
+
+def numpy_to_gdal_datatype(dtype):
+    """
+    Method to convert numpy data type to gdal dtype
+    """
+    if dtype == np.uint8:
+        return gdal.GDT_Byte
+    elif dtype == np.int16:
+        return gdal.GDT_Int16
+    elif dtype == np.int32:
+        return gdal.GDT_Int32
+    elif dtype == np.uint16:
+        return gdal.GDT_UInt16
+    elif dtype == np.uint32:
+        return gdal.GDT_UInt32
+    elif dtype == np.float32:
+        return gdal.GDT_Float32
+    elif dtype == np.float64:
+        return gdal.GDT_Float64
+    elif dtype == np.complex64:
+        return gdal.GDT_CFloat32
+    elif dtype == np.complex128:
+        return gdal.GDT_CFloat64
+    else:
+        raise AssertionError("Data type '%i' is not recognized" % dtype)

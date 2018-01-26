@@ -10,13 +10,13 @@ import numpy as np
 
 # GDAL
 import gdal
-import osgeo.osr
+import osr
 import gdalconst
 
 
 from .common import get_gdal_dtype, gdal_to_numpy_datatype
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('gimg')
 
 
 class GeoImage:
@@ -254,7 +254,7 @@ class GeoImage:
             assert len(self.gcp_projection) > 0, "GCP projection is empty, but there is %i of GCPs found" % count
             gcps = self._dataset.GetGCPs() # gcps is a tuple of <osgeo.gdal.GCP>
             # Setup transformer from gcp projection to lat/lon
-            srs = osgeo.osr.SpatialReference()
+            srs = osr.SpatialReference()
             srs.ImportFromEPSG(4326)
             options = ['SRC_SRS=' + self.gcp_projection, 'DST_SRS=' + srs.ExportToWkt()]
             transformer = gdal.Transformer(self._dataset, None, options)
@@ -275,14 +275,14 @@ class GeoImage:
         if self.projection is None or len(self.projection) == 0:
             return False
         # Init pixel to geo transformer :
-        srs = osgeo.osr.SpatialReference()
+        srs = osr.SpatialReference()
         srs.ImportFromEPSG(4326)
-        dstSRSWkt = srs.ExportToWkt()
-        options = ['DST_SRS=' + dstSRSWkt]
+        dst_srs_wkt = srs.ExportToWkt()
+        options = ['DST_SRS=' + dst_srs_wkt]
 
         transformer = gdal.Transformer(self._dataset, None, options)
         if transformer.this is None:
-            logger.warn("No geo transformer found")
+            logger.warning("No geo transformer found")
             return False
 
         self._pix2geo = transformer
@@ -330,7 +330,7 @@ class GeoImage:
             src_extent = src_rect
 
         if src_req_extent is None:
-            logger.warn('source request extent is None')
+            logger.warning('source request extent is None')
             return None
         
         if dst_width is None and dst_height is None:
@@ -396,6 +396,19 @@ class GeoImage:
         Method to get image gdal dataset
         """
         return self._dataset
+
+    def get_epsg(self):
+        """
+        Method to get epsg of the projection
+        :return:
+        """
+        assert not (self.projection is None or len(self.projection) == 0), "No projection is defined"
+        proj = osr.SpatialReference(wkt=self.projection)
+        try:
+            epsg = int(proj.GetAttrValue('AUTHORITY', 1))
+        except ValueError:
+            assert False, "Failed to convert '%s' to epsg code" % proj.GetAttrValue('AUTHORITY', 1)
+        return epsg
 
 
 def intersection(r1, r2):
@@ -464,3 +477,51 @@ def update_dtype(dtype, v):
     if np.array(v).astype(dtype) != np.array(v):
         return type(v)
     return dtype
+
+
+def compute_geo_extent(geo_transform, shape):
+    """
+    Method to compute geo extent from geo transformation
+    :param geo_transform: tuple or list of 6 coefficients for transforming between pixel/lines and projection
+        coordinates:
+    ```
+        Xp = geo_transform[0] + P * geo_transform[1] + L * geo_transform[2];
+        Yp = geo_transform[3] + P * geo_transform[4] + L * geo_transform[5];
+    ```
+    See more info : http://www.gdal.org/classGDALDataset.html#a5101119705f5fa2bc1344ab26f66fd1d
+    :param shape: raster shape (height, width)
+    :return: geo extent [top-left, top-right, bottom-right, bottom-left] in projection coordinates
+    """
+    assert isinstance(geo_transform, (tuple, list, np.ndarray)) and len(geo_transform) == 6, \
+        "Argument geo_transform should be a tuple or list or ndarray and have 6 values"
+    assert isinstance(shape, (list, tuple)) and len(shape) >= 2, "Argument shape should be (height, width)"
+    return np.array([
+        [geo_transform[0], geo_transform[3]],
+        [geo_transform[0] + (shape[1]-1)*geo_transform[1], geo_transform[3] + (shape[1]-1)*geo_transform[4]],
+        [geo_transform[0] + (shape[1]-1)*geo_transform[1] + (shape[0]-1)*geo_transform[2],
+         geo_transform[3] + (shape[1]-1)*geo_transform[4] + (shape[0]-1)*geo_transform[5]],
+        [geo_transform[0],
+         geo_transform[3] + (shape[0]-1)*geo_transform[5]]
+    ])
+
+
+def compute_geo_transform(geo_extent, shape):
+    """
+    Method to compute geo transformation from geo transformation extent
+    :param geo_extent: tuple or list of 4 points [top-left, top-right, bottom-right, bottom-left] in projection
+        coordinates
+    :param shape: raster shape (height, width)
+    :return: tuple or list of 6 coefficients for transforming between pixel/lines and projection coordinates
+    """
+    assert isinstance(geo_extent, (tuple, list, np.ndarray)) and len(geo_extent) == 4, \
+        "Argument geo_extent should be a tuple or list or ndarray and have 4 points"
+    assert isinstance(shape, (list, tuple)) and len(shape) >= 2, "Argument shape should be (height, width)"
+
+    return np.array([
+        geo_extent[0][0],
+        0,
+        0,
+        geo_extent[0][1],
+        0,
+        0
+    ])
