@@ -105,6 +105,7 @@ class GeoImage:
         self.gcps = None
         self.gcp_projection = ""
         self._pix2geo = None
+        self._pix2proj = None
         self._subsets = []
             
     @staticmethod
@@ -173,35 +174,62 @@ class GeoImage:
             In case of 'geo2pix' output value can be [-1, -1] which means point is not in the image
 
         """
-        assert self._pix2geo is not None, "Geo transformer is None"
+        assert option in ["pix2geo", "geo2pix", "pix2proj", "proj2pix"], \
+            "Argument option should be one of the following values: 'pix2geo', 'geo2pix', 'pix2proj', 'proj2pix'"
+
+        transformer = self._pix2geo if option in ["pix2geo", "geo2pix"] else self._pix2proj
+        assert transformer is not None, "Geo transformer is None"
+
         points = np.array(points)
         _assert_numpy_points(points)
 
-        if option is "pix2geo":
-            out = np.zeros((len(points), 2))
-            for count, pt in enumerate(points):
-                g = self._pix2geo.TransformPoint(0, float(pt[0]), float(pt[1]), 0.0)
-                out[count, 0] = g[1][0]
-                out[count, 1] = g[1][1]
-            return out
-        elif option is "geo2pix":
-            out = np.zeros((len(points), 2), dtype=np.int16)-1
-
-            def f(xx):
-                return abs(round(xx))
-
-            w = self.shape[1]
-            h = self.shape[0]
-            for count, pt in enumerate(points):
-                g = self._pix2geo.TransformPoint(1, float(pt[0]), float(pt[1]), 0.0)
-                x = f(g[1][0])
-                y = f(g[1][1])
-                if 0 <= x < w and 0 <= y < h:
-                    out[count, 0] = x
-                    out[count, 1] = y
-            return out
+        h, w = self.shape[:2]
+        if "pix2" in option:
+            dtype = np.float64
+            postfix_fn = lambda x: x
+            postfix_cond = lambda x, y: True
+            init_value = 0.0
+            is_dst2src = 0
         else:
-            return None
+            dtype = np.int16
+            postfix_cond = lambda x, y: 0 <= x < w and 0 <= y < h
+            postfix_fn = lambda x: abs(round(x))
+            init_value = -1
+            is_dst2src = 1
+
+        out = np.zeros((len(points), 2), dtype=dtype) + init_value
+        for count, pt in enumerate(points):
+            g = transformer.TransformPoint(is_dst2src, float(pt[0]), float(pt[1]), 0.0)
+            if postfix_cond(g[1][0], g[1][1]):
+                out[count, :] = (postfix_fn(g[1][0]), postfix_fn(g[1][1]))
+
+        return out
+
+        # if option is "pix2geo":
+        #     out = np.zeros((len(points), 2))
+        #     for count, pt in enumerate(points):
+        #         g = self._pix2geo.TransformPoint(0, float(pt[0]), float(pt[1]), 0.0)
+        #         out[count, 0] = g[1][0]
+        #         out[count, 1] = g[1][1]
+        #     return out
+        # elif option is "geo2pix":
+        #     out = np.zeros((len(points), 2), dtype=np.int16)-1
+        #
+        #     def f(xx):
+        #         return abs(round(xx))
+        #
+        #     w = self.shape[1]
+        #     h = self.shape[0]
+        #     for count, pt in enumerate(points):
+        #         g = self._pix2geo.TransformPoint(1, float(pt[0]), float(pt[1]), 0.0)
+        #         x = f(g[1][0])
+        #         y = f(g[1][1])
+        #         if 0 <= x < w and 0 <= y < h:
+        #             out[count, 0] = x
+        #             out[count, 1] = y
+        #     return out
+        # else:
+        #     return None
 
     def _fetch_metadata(self):
         assert self._dataset is not None, "Dataset is None"
@@ -268,24 +296,31 @@ class GeoImage:
 
     def _setup_geo_transformers(self):
         assert self._dataset is not None, "Dataset is None"
-        if self._pix2geo is not None:
-            return False
+        assert self._pix2geo is None and self._pix2proj is None
 
         self.projection = self._dataset.GetProjection()
         if self.projection is None or len(self.projection) == 0:
             return False
+
+        def _get_transformer(dst_srs_wkt):
+            options = ['DST_SRS=' + dst_srs_wkt]
+            return gdal.Transformer(self._dataset, None, options)
+
         # Init pixel to geo transformer :
         srs = osr.SpatialReference()
         srs.ImportFromEPSG(4326)
-        dst_srs_wkt = srs.ExportToWkt()
-        options = ['DST_SRS=' + dst_srs_wkt]
-
-        transformer = gdal.Transformer(self._dataset, None, options)
+        transformer = _get_transformer(srs.ExportToWkt())
         if transformer.this is None:
             logger.warning("No geo transformer found")
             return False
-
         self._pix2geo = transformer
+
+        srs = osr.SpatialReference(wkt=self.projection)
+        transformer = _get_transformer(srs.ExportToWkt())
+        if transformer.this is None:
+            logger.warning("No geo transformer found")
+            return False
+        self._pix2proj = transformer
         return True
 
     def _compute_geo_extent(self):
@@ -496,12 +531,15 @@ def compute_geo_extent(geo_transform, shape):
         "Argument geo_transform should be a tuple or list or ndarray and have 6 values"
     assert isinstance(shape, (list, tuple)) and len(shape) >= 2, "Argument shape should be (height, width)"
     return np.array([
+        # (P=0, L=0)
         [geo_transform[0], geo_transform[3]],
+        # (P=W-1, L=0)
         [geo_transform[0] + (shape[1]-1)*geo_transform[1], geo_transform[3] + (shape[1]-1)*geo_transform[4]],
+        # (P=W-1, L=H-1)
         [geo_transform[0] + (shape[1]-1)*geo_transform[1] + (shape[0]-1)*geo_transform[2],
          geo_transform[3] + (shape[1]-1)*geo_transform[4] + (shape[0]-1)*geo_transform[5]],
-        [geo_transform[0],
-         geo_transform[3] + (shape[0]-1)*geo_transform[5]]
+        # (P=0, L=H-1)
+        [geo_transform[0] + (shape[0]-1)*geo_transform[2], geo_transform[3] + (shape[0]-1)*geo_transform[5]]
     ])
 
 
@@ -519,9 +557,9 @@ def compute_geo_transform(geo_extent, shape):
 
     return np.array([
         geo_extent[0][0],
-        0,
-        0,
+        (geo_extent[2][0] - geo_extent[3][0]) / (shape[1] - 1),
+        (geo_extent[2][0] - geo_extent[1][0]) / (shape[0] - 1),
         geo_extent[0][1],
-        0,
-        0
+        (geo_extent[2][1] - geo_extent[3][1]) / (shape[1] - 1),
+        (geo_extent[2][1] - geo_extent[1][1]) / (shape[0] - 1),
     ])

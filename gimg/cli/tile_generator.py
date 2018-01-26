@@ -44,8 +44,7 @@ def run_const_size_tiler(input_dir, output_dir, tile_size, min_overlapping, exte
                 # transform 4 image corners
                 h, w = tile.shape[0], tile.shape[1]
                 pts = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]])
-                geo_extent = geo_image.transform(pts, "pix2geo")
-
+                geo_extent = geo_image.transform(pts, "pix2proj")
                 geo_info = {
                     'epsg': geo_image.get_epsg(),
                     'geo_extent': geo_extent

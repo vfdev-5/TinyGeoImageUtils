@@ -1,7 +1,7 @@
 #
 # Test common module
 #
-from unittest import TestCase, TestLoader, TextTestRunner
+from unittest import TestCase, main
 
 import numpy as np
 import gdal
@@ -102,7 +102,5 @@ class TestCommon(TestCase):
 
 
 if __name__ == "__main__":
-
-    suite = TestLoader().loadTestsFromTestCase(TestCommon)
-    TextTestRunner().run(suite)
+    main()
 

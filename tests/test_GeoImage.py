@@ -2,7 +2,7 @@
 #
 # Test GeoImage
 #
-from unittest import TestCase, TestLoader, TextTestRunner
+from unittest import TestCase, main
 import tempfile
 import shutil
 
@@ -12,6 +12,7 @@ import numpy as np
 # Project
 from gimg import GeoImage
 from gimg.common import get_dtype
+from gimg.GeoImage import compute_geo_extent, compute_geo_transform
 
 from .create_synthetic_images import create_synthetic_image_file, create_virt_image
 
@@ -38,14 +39,13 @@ class TestGeoImage(TestCase):
         metadata['IMAGE_STRUCTURE__INTERLEAVE'] = 'PIXEL'
         metadata['AREA_OR_POINT'] = 'Area'
         self.assertEqual(metadata, gimage.metadata)
-        self.assertTrue((geo_extent == gimage.geo_extent).all(),
-                        "Wrong geo extent : {} != {}".format(geo_extent, gimage.geo_extent))
+        self.assertLess(np.sum(np.abs(geo_extent - gimage.geo_extent)), 1e-10)
         self.assertEqual(epsg, gimage.get_epsg())
         gimage_data = gimage.get_data()
         self.assertEqual(shape, gimage_data.shape)
         self.assertEqual(get_dtype(depth, is_complex), gimage_data.dtype)
         # verify data
-        self.assertEqual(float(np.sum(data - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data - gimage_data)), 1e-10)
 
     def test_with_synthetic_image_with_select_bands(self):
         is_complex = False
@@ -60,8 +60,7 @@ class TestGeoImage(TestCase):
         metadata['IMAGE_STRUCTURE__INTERLEAVE'] = 'PIXEL'
         metadata['AREA_OR_POINT'] = 'Area'
         self.assertEqual(metadata, gimage.metadata)
-        self.assertTrue((geo_extent == gimage.geo_extent).all(),
-                        "Wrong geo extent : {} != {}".format(geo_extent, gimage.geo_extent))
+        self.assertLess(np.sum(np.abs(geo_extent - gimage.geo_extent)), 1e-10)
         self.assertEqual(epsg, gimage.get_epsg())
         select_bands = [0, 2, 4]
         gimage_data = gimage.get_data(select_bands=select_bands)
@@ -69,7 +68,7 @@ class TestGeoImage(TestCase):
         self.assertEqual(len(select_bands), gimage_data.shape[2])
         self.assertEqual(get_dtype(depth, is_complex), gimage_data.dtype)
         # verify data
-        self.assertEqual(float(np.sum(data[:, :, select_bands] - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data[:, :, select_bands] - gimage_data)), 1e-10)
 
     def test_with_virtual_image(self):
 
@@ -83,7 +82,7 @@ class TestGeoImage(TestCase):
         self.assertEqual(data.dtype, gimage_data.dtype)
 
         # verify data
-        self.assertEqual(float(np.sum(data - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data - gimage_data)), 1e-10)
 
     def test_with_virtual_image2(self):
 
@@ -97,7 +96,7 @@ class TestGeoImage(TestCase):
         self.assertEqual(data.dtype, gimage_data.dtype)
 
         # verify data
-        self.assertEqual(float(np.sum(data - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data - gimage_data)), 1e-10)
 
     def test_from_dataset_with_select_bands(self):
 
@@ -113,10 +112,22 @@ class TestGeoImage(TestCase):
         self.assertEqual(data.dtype, gimage_data.dtype)
 
         # verify data
-        self.assertEqual(float(np.sum(data[:, :, select_bands] - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data[:, :, select_bands] - gimage_data)), 1e-10)
+
+    def test_compute_geo_transform(self):
+        geo_extent = [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0]]
+        true_geo_transform = [0.0, 1.0/99.0, -1.0/99.0, 1.0, -1.0/99.0, -1.0/99.0]
+        geo_transform = compute_geo_transform(geo_extent, (100, 100))
+        self.assertLess(np.sum(np.abs(geo_transform - true_geo_transform)), 1e-10,
+                        "{} vs {}".format(geo_transform, true_geo_transform))
+
+    def test_compute_geo_extent(self):
+        geo_transform = [0.0, 1.0/99.0, -1.0/99.0, 1.0, -1.0/99.0, -1.0/99.0]
+        true_geo_extent = [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0]]
+        geo_extent = compute_geo_extent(geo_transform, (100, 100))
+        self.assertLess(np.sum(np.abs(geo_extent - true_geo_extent)), 1e-10,
+                        "{} vs {}".format(geo_extent, true_geo_extent))
 
 
 if __name__ == "__main__":
-
-    suite = TestLoader().loadTestsFromTestCase(TestGeoImage)
-    TextTestRunner().run(suite)
+    main()

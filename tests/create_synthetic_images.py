@@ -62,7 +62,7 @@ def create_synthetic_image_file(local_temp_folder, shape, depth, is_complex):
     # Create local synthetic image:
     filepath = os.path.join(local_temp_folder, 'test_small_image.tif')
     metadata = {'key_1': 'value_1', 'key_2': "1 2 3", 'key_3': '3'}
-    geo_transform = (13.60746033, 0.001, 0.0, 50.25013288, 0.0, -0.001)
+    geo_transform = (13.60746033, 0.001, 0.0005, 50.25013288, 0.0005, -0.001)
     geo_extent = compute_geo_extent(geo_transform, shape)
     epsg = 4326
     data = create(shape[1], shape[0], shape[2], filepath,

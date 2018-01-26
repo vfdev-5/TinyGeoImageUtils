@@ -4,13 +4,13 @@ import logging
 import tempfile
 import shutil
 import os
-from unittest import TestCase, TestLoader, TextTestRunner
+from unittest import TestCase, main
 
 import numpy as np
 
 from gimg import GeoImage
 from gimg import GeoImageTiler, GeoImageTilerConstSize
-from create_synthetic_images import create
+from .create_synthetic_images import create
 
 
 class TestGeoImageTiler(TestCase):
@@ -241,10 +241,5 @@ class TestGeoImageTilerConstSize(TestCase):
 
 
 if __name__ == "__main__":
-
-    suite = TestLoader().loadTestsFromTestCase(TestGeoImageTiler)
-    TextTestRunner().run(suite)
-
-    suite = TestLoader().loadTestsFromTestCase(TestGeoImageTilerConstSize)
-    TextTestRunner().run(suite)
+    main()
 

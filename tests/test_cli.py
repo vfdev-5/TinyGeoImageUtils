@@ -5,7 +5,7 @@ import tempfile
 import shutil
 import os
 
-from unittest import TestCase, TestLoader, TextTestRunner
+from unittest import TestCase, main
 
 import numpy as np
 
@@ -13,10 +13,8 @@ from gimg.cli import get_files_from_folder, write_to_file, EXTENSIONS_GDAL_DRIVE
 from gimg import GeoImage
 
 
-from create_datasets import create_dataset_with_target_is_folder, create_dataset_with_target_is_mask_file, \
+from .create_datasets import create_dataset_with_target_is_folder, create_dataset_with_target_is_mask_file, \
     create_dataset_with_target_is_mask_file2, create_potsdam_like_dataset
-
-from create_synthetic_images import compute_geo_extent
 
 
 class TestCliModule(TestCase):
@@ -55,11 +53,10 @@ class TestCliModule(TestCase):
         metadata = {'key_1': 'value_1', 'key_2': "1 2 3", 'key_3': '3'}
         geo_info = {
             'epsg': 4326,
-            'geo_transform': (13.60746033, 0.001, 0.0, 50.25013288, 0.0, -0.001)
+            'geo_extent': [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0]]
         }
         data = np.random.randint(0, 128, size=shape, dtype=dtype)
-        geo_extent = compute_geo_extent(geo_info['geo_transform'], shape)
-        return filepath, data, geo_info, metadata, geo_extent
+        return filepath, data, geo_info, metadata, geo_info['geo_extent']
 
     def _test_write_to_file(self, ext, dtype, shape):
         filepath, data, geo_info, metadata, geo_extent = self._generate_data_to_write(ext, dtype, shape)
@@ -71,14 +68,14 @@ class TestCliModule(TestCase):
         metadata['IMAGE_STRUCTURE__INTERLEAVE'] = 'PIXEL'
         metadata['AREA_OR_POINT'] = 'Area'
         self.assertEqual(metadata, gimage.metadata)
-        self.assertTrue((geo_extent == gimage.geo_extent).all(),
-                        "Wrong geo extent : {} != {}".format(geo_extent, gimage.geo_extent))
+        self.assertLess(np.sum(np.abs(geo_extent - gimage.geo_extent)), 1e-10,
+                        "{} vs {}".format(geo_extent, gimage.geo_extent))
 
         gimage_data = gimage.get_data()
         self.assertEqual(shape, gimage_data.shape)
         self.assertEqual(dtype, gimage_data.dtype)
         # verify data
-        self.assertEqual(float(np.sum(data - gimage_data)), 0.0)
+        self.assertLess(np.sum(np.abs(data - gimage_data)), 1e-10)
 
     def test_write_to_file(self):
         self._test_write_to_file('f1.tif', np.uint8, (50, 50, 3))
@@ -86,7 +83,4 @@ class TestCliModule(TestCase):
 
 
 if __name__ == "__main__":
-
-    suite = TestLoader().loadTestsFromTestCase(TestCliModule)
-    TextTestRunner().run(suite)
-
+    main()

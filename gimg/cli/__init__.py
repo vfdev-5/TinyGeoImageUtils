@@ -1,6 +1,4 @@
 
-from __future__ import absolute_import
-
 import os
 import numpy as np
 from glob import glob
@@ -10,6 +8,7 @@ import gdal
 import osr
 
 from ..common import numpy_to_gdal_datatype
+from ..GeoImage import compute_geo_transform
 
 
 logger = logging.getLogger('gimg')
@@ -51,7 +50,7 @@ def write_to_file(data, output_filepath, geo_info=None, metadata=None):
     if geo_info is not None:
         assert isinstance(geo_info, dict) and "epsg" in geo_info and "geo_extent" in geo_info, \
             "Argument geo_info should be a dictionary with keys, values: " + \
-            "'epsg': epsg_code, 'geo_transform': [a, b, c, d, e, f]"
+            "'epsg': epsg_code, 'geo_extent': [top-left, top-right, bottom-right, bottom-left]"
 
     if metadata is not None:
         assert isinstance(metadata, dict), "Metadata argument should be a dictionary"
@@ -80,7 +79,7 @@ def write_to_file(data, output_filepath, geo_info=None, metadata=None):
     proj = sr.ExportToWkt()
     dst_ds.SetProjection(proj)
 
-    geo_transform = compute_geo_transform(geo_info['geo_extent'])
+    geo_transform = compute_geo_transform(geo_info['geo_extent'], (height, width))
     dst_ds.SetGeoTransform(geo_transform)
 
     dst_ds.SetMetadata(metadata)
