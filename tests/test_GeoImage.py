@@ -9,17 +9,22 @@ import shutil
 # Numpy
 import numpy as np
 
+# GDAL
+from osgeo.gdal import __version__ as gdal_version
+
 # Project
 from gimg import GeoImage
 from gimg.common import get_dtype
 from gimg.GeoImage import compute_geo_extent, compute_geo_transform
 
 from .create_synthetic_images import create_synthetic_image_file, create_virt_image
+from . import check_metadata
 
 
 class TestGeoImage(TestCase):
 
     def setUp(self):
+        self.gdal_version_major = int(gdal_version[0])
         # Create local temp directory
         self.local_temp_folder = tempfile.mkdtemp()
 
@@ -35,10 +40,10 @@ class TestGeoImage(TestCase):
                                                                                                 shape, depth,
                                                                                                 is_complex)
         gimage = GeoImage(filepath)
-        # Must add this metadata : 'IMAGE_STRUCTURE__INTERLEAVE': 'PIXEL', 'AREA_OR_POINT': 'Area'
-        metadata['IMAGE_STRUCTURE__INTERLEAVE'] = 'PIXEL'
-        metadata['AREA_OR_POINT'] = 'Area'
-        self.assertEqual(metadata, gimage.metadata)
+        if self.gdal_version_major > 1:
+            self.assertTrue(check_metadata(metadata, gimage.metadata),
+                            "{} vs {}".format(metadata, gimage.metadata))
+
         self.assertLess(np.sum(np.abs(geo_extent - gimage.geo_extent)), 1e-10)
         self.assertEqual(epsg, gimage.get_epsg())
         gimage_data = gimage.get_data()
@@ -56,10 +61,9 @@ class TestGeoImage(TestCase):
                                                                                                 is_complex)
 
         gimage = GeoImage(filepath)
-        # Must add this metadata : 'IMAGE_STRUCTURE__INTERLEAVE': 'PIXEL', 'AREA_OR_POINT': 'Area'
-        metadata['IMAGE_STRUCTURE__INTERLEAVE'] = 'PIXEL'
-        metadata['AREA_OR_POINT'] = 'Area'
-        self.assertEqual(metadata, gimage.metadata)
+        if self.gdal_version_major > 1:
+            self.assertTrue(check_metadata(metadata, gimage.metadata),
+                            "{} vs {}".format(metadata, gimage.metadata))
         self.assertLess(np.sum(np.abs(geo_extent - gimage.geo_extent)), 1e-10)
         self.assertEqual(epsg, gimage.get_epsg())
         select_bands = [0, 2, 4]

@@ -82,5 +82,4 @@ def create_virt_image(w, h, c, dtype):
     ds = driver.Create('', w, h, c, gdal_dtype)
     for i in range(0, c):
         ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
-    driver = None
     return ds, data
