@@ -1,8 +1,7 @@
 # Tiny Geographical Image Utils
 
 [![Build Status](https://travis-ci.org/vfdev-5/TinyGeoImageUtils.svg?branch=master)](https://travis-ci.org/vfdev-5/TinyGeoImageUtils) 
-[![Coverage Status](https://coveralls.io/repos/vfdev-5/TinyGeoImageUtils/badge.svg?branch=master&service=github&t=nhModO)](https://coveralls.io/github/vfdev-5/TinyGeoImageUtils?branch=master)
-
+[![Coverage Status](https://coveralls.io/repos/github/vfdev-5/TinyGeoImageUtils/badge.svg)](https://coveralls.io/github/vfdev-5/TinyGeoImageUtils)
 
 Reading and manipulation of geographical images. Based on [GDAL](http://www.gdal.org/)
 
