@@ -39,16 +39,16 @@ pip install git+https://github.com/vfdev-5/TinyGeoImageUtils.git
 
 ####  Usage:
 
-```
+```python
 import numpy as np
 import matplotlib.pyplot as plt
 from gimg import GeoImage
 
 gimg = GeoImage("path/to/image/file")
-np_img = gimg.get_data([0, 0, 500, 500])
+data = gimg.get_data([0, 0, 500, 500])
 
-print np_img.shape, np_img.type
-plt.imshow(np_img[:,:,0])
+print(data.shape, data.type)
+plt.imshow(data[:, :, 0])
 plt.show()
 ```
 
@@ -64,7 +64,7 @@ gimg = GeoImage("path/to/image/file")
 tiles = GeoImageTilerConstSize(gimg, tile_size=(512, 512), min_overlapping=128)
 
 for tile, x, y in tiles:
-    print tile.shape, tile.type, x, y
+    print(tile.shape, tile.type, x, y)
 ```
 
 See other examples: 
