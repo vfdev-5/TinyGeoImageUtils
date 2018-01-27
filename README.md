@@ -12,16 +12,16 @@ Reading and manipulation of geographical images. Based on [GDAL](http://www.gdal
 #### Linux 
 ```
 pip install numpy click
-sudo apt-get install python3-gdal 
-# or 
-sudo apt-get install python-gdal
+sudo apt-get install libgdal-dev
+pip install gdal
 ```
 
 #### MacOSX
 
 ```
 pip install numpy
-brew install gdal
+brew install gdal2
+pip install gdal
 ```
 
 ### Repository
@@ -36,7 +36,6 @@ pip install git+https://github.com/vfdev-5/TinyGeoImageUtils.git
 
 * `GeoImage` for reading geographical images 
 * `GeoImageTiler` for tiled reading geographical images
-
 
 ####  Usage:
 
@@ -68,12 +67,39 @@ for tile, x, y in tiles:
     print tile.shape, tile.type, x, y
 ```
 
-See [example.ipynb](examples/examples.ipynb) for some basic examples of usage
+See other examples: 
+- [example.ipynb](examples/examples.ipynb)
+- [create images](examples/create_images.py)
 
 
 ### CLI 
 
-* `tile_generator`
+#### `tile_generator` 
+
+Application to write tiles from input single image or a folder of images. 
+
+##### tiles of constant size
+
+Generate tiles of constant size with overlapping.
 
 ```
-> 
+>  tile_generator const_size --help
+
+Usage: tile_generator const_size [OPTIONS] INPUT_DIR_OR_FILE OUTPUT_DIR
+                                 TILE_SIZE_IN_PIXELS MIN_OVERLAPPING_IN_PIXELS
+
+Options:
+  --extensions TEXT        String of file extensions to select (if input is a
+                           directory), e.g. 'jpg,png,tif'
+  --output_extension TEXT  Output tile file extension
+  --n_workers INTEGER      Number of workers in the processing pool
+                           [default=4]
+  -q, --quiet              Disable verbose mode
+  --help                   Show this message and exit.
+```
+For example,
+```
+> mkdir examples/tiles
+> tile_generator const_size --extensions="jpg,png" examples/dog.jpg examples/tiles 256 20
+```
+
