@@ -10,12 +10,13 @@ import numpy as np
 
 # GDAL
 import gdal
-import osgeo.osr
+import osr
 import gdalconst
+
 
 from .common import get_gdal_dtype, gdal_to_numpy_datatype
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('gimg')
 
 
 class GeoImage:
@@ -24,6 +25,7 @@ class GeoImage:
     Requires GDAL >= 1.11
 
     Usage :
+    ```
         gimage = GeoImage('path/to/geo/image/filename')
 
         # Display image dimensions:
@@ -80,10 +82,9 @@ class GeoImage:
         # 0, 1, 2, 3, 4, ...
         gimage_subset_0 = gimage.get_subset_geoimage(0)
 
-
         # Specific information can be acquired directly from gdal dataset
         ds = gimage.get_dataset()
-
+    ```
     """
 
     def __init__(self, filename=""):
@@ -104,8 +105,9 @@ class GeoImage:
         self.gcps = None
         self.gcp_projection = ""
         self._pix2geo = None
+        self._pix2proj = None
         self._subsets = []
-            
+
     @staticmethod
     def from_dataset(dataset):
         gimage = GeoImage()
@@ -150,8 +152,6 @@ class GeoImage:
     def open(self, filename):
         """
             Method to load image from filename
-            - self.geoExtent is a numpy array of 4 points (long, lat) : [[left,top], [right,top], [right,bottom], [left,bottom]]
-            - self.metadata is an array of image metadata
         """
         dataset = gdal.Open(filename, gdalconst.GA_ReadOnly)
         assert dataset is not None, "Failed to open the file: %s " % filename
@@ -172,35 +172,44 @@ class GeoImage:
             In case of 'geo2pix' output value can be [-1, -1] which means point is not in the image
 
         """
-        assert self._pix2geo is not None, "Geo transformer is None"
+        assert option in ["pix2geo", "geo2pix", "pix2proj", "proj2pix"], \
+            "Argument option should be one of the following values: 'pix2geo', 'geo2pix', 'pix2proj', 'proj2pix'"
+
+        transformer = self._pix2geo if option in ["pix2geo", "geo2pix"] else self._pix2proj
+        assert transformer is not None, "Geo transformer is None"
+
         points = np.array(points)
         _assert_numpy_points(points)
 
-        if option is "pix2geo":
-            out = np.zeros((len(points), 2))
-            for count, pt in enumerate(points):
-                g = self._pix2geo.TransformPoint(0, float(pt[0]), float(pt[1]), 0.0)
-                out[count, 0] = g[1][0]
-                out[count, 1] = g[1][1]
-            return out
-        elif option is "geo2pix":
-            out = np.zeros((len(points), 2), dtype=np.int16)-1
+        h, w = self.shape[:2]
+        if "pix2" in option:
+            dtype = np.float64
 
-            def f(xx):
-                return abs(round(xx))
+            def postfix_fn(x):
+                return x
 
-            w = self.shape[1]
-            h = self.shape[0]
-            for count, pt in enumerate(points):
-                g = self._pix2geo.TransformPoint(1, float(pt[0]), float(pt[1]), 0.0)
-                x = f(g[1][0])
-                y = f(g[1][1])
-                if 0 <= x < w and 0 <= y < h:
-                    out[count, 0] = x
-                    out[count, 1] = y
-            return out
+            def postfix_cond(x, y):
+                return True
+            init_value = 0.0
+            is_dst2src = 0
         else:
-            return None
+            dtype = np.int16
+
+            def postfix_cond(x, y):
+                return 0 <= x < w and 0 <= y < h
+
+            def postfix_fn(x):
+                return abs(round(x))
+            init_value = -1
+            is_dst2src = 1
+
+        out = np.zeros((len(points), 2), dtype=dtype) + init_value
+        for count, pt in enumerate(points):
+            g = transformer.TransformPoint(is_dst2src, float(pt[0]), float(pt[1]), 0.0)
+            if postfix_cond(g[1][0], g[1][1]):
+                out[count, :] = (postfix_fn(g[1][0]), postfix_fn(g[1][1]))
+
+        return out
 
     def _fetch_metadata(self):
         assert self._dataset is not None, "Dataset is None"
@@ -236,7 +245,7 @@ class GeoImage:
                 return metadata
 
             nb_bands = gdal_object.RasterCount
-            for i in range(1, nb_bands+1):
+            for i in range(1, nb_bands + 1):
                 band = gdal_object.GetRasterBand(i)
                 if band is None:
                     logger.error("Raster band %i is None" % i)
@@ -251,9 +260,9 @@ class GeoImage:
         count = self._dataset.GetGCPCount()
         if count > 0:
             assert len(self.gcp_projection) > 0, "GCP projection is empty, but there is %i of GCPs found" % count
-            gcps = self._dataset.GetGCPs() # gcps is a tuple of <osgeo.gdal.GCP>
+            gcps = self._dataset.GetGCPs()  # gcps is a tuple of <osgeo.gdal.GCP>
             # Setup transformer from gcp projection to lat/lon
-            srs = osgeo.osr.SpatialReference()
+            srs = osr.SpatialReference()
             srs.ImportFromEPSG(4326)
             options = ['SRC_SRS=' + self.gcp_projection, 'DST_SRS=' + srs.ExportToWkt()]
             transformer = gdal.Transformer(self._dataset, None, options)
@@ -267,24 +276,31 @@ class GeoImage:
 
     def _setup_geo_transformers(self):
         assert self._dataset is not None, "Dataset is None"
-        if self._pix2geo is not None:
-            return False
+        assert self._pix2geo is None and self._pix2proj is None
 
         self.projection = self._dataset.GetProjection()
         if self.projection is None or len(self.projection) == 0:
             return False
+
+        def _get_transformer(dst_srs_wkt):
+            options = ['DST_SRS=' + dst_srs_wkt]
+            return gdal.Transformer(self._dataset, None, options)
+
         # Init pixel to geo transformer :
-        srs = osgeo.osr.SpatialReference()
+        srs = osr.SpatialReference()
         srs.ImportFromEPSG(4326)
-        dstSRSWkt = srs.ExportToWkt()
-        options = ['DST_SRS=' + dstSRSWkt]
-
-        transformer = gdal.Transformer(self._dataset, None, options)
+        transformer = _get_transformer(srs.ExportToWkt())
         if transformer.this is None:
-            logger.warn("No geo transformer found")
+            logger.warning("No geo transformer found")
             return False
-
         self._pix2geo = transformer
+
+        srs = osr.SpatialReference(wkt=self.projection)
+        transformer = _get_transformer(srs.ExportToWkt())
+        if transformer.this is None:
+            logger.warning("No geo transformer found")
+            return False
+        self._pix2proj = transformer
         return True
 
     def _compute_geo_extent(self):
@@ -296,23 +312,24 @@ class GeoImage:
         # transform 4 image corners
         w = self._dataset.RasterXSize
         h = self._dataset.RasterYSize
-        pts = np.array([[0, 0], [w-1, 0], [w-1, h-1], [0, h-1]])
+        pts = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]])
         return self.transform(pts, "pix2geo")
 
     def get_data(self, src_rect=None, dst_width=None, dst_height=None, nodata_value=0, dtype=None, select_bands=None):
         """
         Method to read data from image
-        :param src_rect: is source extent in pixels : [x,y,w,h] where (x,y) is top-left corner. Can be None and whole image extent is used.
+        :param src_rect: is source extent in pixels : [x,y,w,h] where (x,y) is top-left corner.
+            Can be None and whole image extent is used.
         :param dst_width is the output array width. Can be None and src_rect[2] (width) is used.
         :param dst_height is the output array heigth. Can be None and src_rect[3] (height) is used.
         :param nodata_value: value to fill out of bounds pixels with.
         :param dtype: force type of returned numpy array
-        :param select_bands: tuple of band indices (zero-based) to select from dataset, e.g. [0, 3, 4]. 
+        :param select_bands: tuple of band indices (zero-based) to select from dataset, e.g. [0, 3, 4].
         Returns a numpy array
         """
         assert self._dataset is not None, "Dataset is None"
-        assert self.shape[2] > 0, "Dataset has no bands" 
-        
+        assert self.shape[2] > 0, "Dataset has no bands"
+
         if select_bands is not None:
             assert isinstance(select_bands, list) or isinstance(select_bands, tuple), \
                 "Argument select_bands should be a tuple or list"
@@ -329,9 +346,9 @@ class GeoImage:
             src_extent = src_rect
 
         if src_req_extent is None:
-            logger.warn('source request extent is None')
+            logger.warning('source request extent is None')
             return None
-        
+
         if dst_width is None and dst_height is None:
             dst_extent = [src_extent[2], src_extent[3]]
         elif dst_height is None:
@@ -354,7 +371,7 @@ class GeoImage:
              req_scaled_h]
 
         band_indices = range(self.shape[2]) if select_bands is None else select_bands
-        nb_bands = len(band_indices) 
+        nb_bands = len(band_indices)
 
         if dtype is None:
             datatype = gdal_to_numpy_datatype(self._dataset.GetRasterBand(1).DataType)
@@ -366,16 +383,16 @@ class GeoImage:
         out.fill(nodata_value)
 
         for i, index in enumerate(band_indices):
-            band = self._dataset.GetRasterBand(index+1)
+            band = self._dataset.GetRasterBand(index + 1)
             data = band.ReadAsArray(src_req_extent[0],
                                     src_req_extent[1],
                                     src_req_extent[2],
                                     src_req_extent[3],
                                     r[2], r[3])
-            out[r[1]:r[1]+r[3], r[0]:r[0]+r[2], i] = data[:, :]
+            out[r[1]:r[1] + r[3], r[0]:r[0] + r[2], i] = data[:, :]
 
         return out
-    
+
     def get_filename(self):
         """
         Method to get image file name without path
@@ -396,6 +413,19 @@ class GeoImage:
         """
         return self._dataset
 
+    def get_epsg(self):
+        """
+        Method to get epsg of the projection
+        :return:
+        """
+        assert not (self.projection is None or len(self.projection) == 0), "No projection is defined"
+        proj = osr.SpatialReference(wkt=self.projection)
+        try:
+            epsg = int(proj.GetAttrValue('AUTHORITY', 1))
+        except ValueError:
+            assert False, "Failed to convert '%s' to epsg code" % proj.GetAttrValue('AUTHORITY', 1)
+        return epsg
+
 
 def intersection(r1, r2):
     """
@@ -409,8 +439,8 @@ def intersection(r1, r2):
     rOut = [0, 0, 0, 0]
     rOut[0] = max(r1[0], r2[0])
     rOut[1] = max(r1[1], r2[1])
-    rOut[2] = min(r1[0]+r1[2]-1, r2[0]+r2[2]-1) - rOut[0] + 1
-    rOut[3] = min(r1[1]+r1[3]-1, r2[1]+r2[3]-1) - rOut[1] + 1
+    rOut[2] = min(r1[0] + r1[2] - 1, r2[0] + r2[2] - 1) - rOut[0] + 1
+    rOut[3] = min(r1[1] + r1[3] - 1, r2[1] + r2[3] - 1) - rOut[1] + 1
 
     if rOut[2] <= 0 or rOut[3] <= 0:
         return None
@@ -428,12 +458,14 @@ def from_ndarray(data):
     h, w, nc = data.shape
     # Create a synthetic gdal dataset
     driver = gdal.GetDriverByName('MEM')
-    gdal_dtype = get_gdal_dtype(data[0, 0, 0].itemsize,
-                                data[0, 0, 0].dtype == np.complex64 or
-                                data[0, 0, 0].dtype == np.complex128)
+    itemsize = data[0, 0, 0].itemsize
+    dtype = data[0, 0, 0].dtype
+    gdal_dtype = get_gdal_dtype(itemsize,
+                                dtype == np.complex64 or dtype == np.complex128,
+                                signed=False if dtype in (np.uint8, np.uint16) else True)
     ds = driver.Create('', w, h, nc, gdal_dtype)
     for i in range(0, nc):
-        ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
+        ds.GetRasterBand(i + 1).WriteArray(data[:, :, i])
 
     geo_image = GeoImage.from_dataset(ds)
     return geo_image
@@ -463,4 +495,52 @@ def update_dtype(dtype, v):
     return dtype
 
 
+def compute_geo_extent(geo_transform, shape):
+    """
+    Method to compute geo extent from geo transformation
+    :param geo_transform: tuple or list of 6 coefficients for transforming between pixel/lines and projection
+        coordinates:
+    ```
+        Xp = geo_transform[0] + P * geo_transform[1] + L * geo_transform[2];
+        Yp = geo_transform[3] + P * geo_transform[4] + L * geo_transform[5];
+    ```
+    See more info : http://www.gdal.org/classGDALDataset.html#a5101119705f5fa2bc1344ab26f66fd1d
+    :param shape: raster shape (height, width)
+    :return: geo extent [top-left, top-right, bottom-right, bottom-left] in projection coordinates
+    """
+    assert isinstance(geo_transform, (tuple, list, np.ndarray)) and len(geo_transform) == 6, \
+        "Argument geo_transform should be a tuple or list or ndarray and have 6 values"
+    assert isinstance(shape, (list, tuple)) and len(shape) >= 2, "Argument shape should be (height, width)"
+    return np.array([
+        # (P=0, L=0)
+        [geo_transform[0], geo_transform[3]],
+        # (P=W-1, L=0)
+        [geo_transform[0] + (shape[1] - 1) * geo_transform[1], geo_transform[3] + (shape[1] - 1) * geo_transform[4]],
+        # (P=W-1, L=H-1)
+        [geo_transform[0] + (shape[1] - 1) * geo_transform[1] + (shape[0] - 1) * geo_transform[2],
+         geo_transform[3] + (shape[1] - 1) * geo_transform[4] + (shape[0] - 1) * geo_transform[5]],
+        # (P=0, L=H-1)
+        [geo_transform[0] + (shape[0] - 1) * geo_transform[2], geo_transform[3] + (shape[0] - 1) * geo_transform[5]]
+    ])
 
+
+def compute_geo_transform(geo_extent, shape):
+    """
+    Method to compute geo transformation from geo transformation extent
+    :param geo_extent: tuple or list of 4 points [top-left, top-right, bottom-right, bottom-left] in projection
+        coordinates
+    :param shape: raster shape (height, width)
+    :return: tuple or list of 6 coefficients for transforming between pixel/lines and projection coordinates
+    """
+    assert isinstance(geo_extent, (tuple, list, np.ndarray)) and len(geo_extent) == 4, \
+        "Argument geo_extent should be a tuple or list or ndarray and have 4 points"
+    assert isinstance(shape, (list, tuple)) and len(shape) >= 2, "Argument shape should be (height, width)"
+
+    return np.array([
+        geo_extent[0][0],
+        (geo_extent[2][0] - geo_extent[3][0]) / (shape[1] - 1),
+        (geo_extent[2][0] - geo_extent[1][0]) / (shape[0] - 1),
+        geo_extent[0][1],
+        (geo_extent[2][1] - geo_extent[3][1]) / (shape[1] - 1),
+        (geo_extent[2][1] - geo_extent[1][1]) / (shape[0] - 1),
+    ])

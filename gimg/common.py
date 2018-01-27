@@ -1,8 +1,6 @@
 #
 # Some common useful functions
 #
-from __future__ import absolute_import
-
 import os
 import numpy as np
 import gdal
@@ -17,8 +15,8 @@ def get_basename(filepath):
 
     """
     bfn = os.path.basename(filepath)
-    splt = bfn.split('.')
-    return '.'.join(splt[:-1]) if len(splt) > 1 else splt[0]
+    splt = bfn.split(os.extsep)
+    return os.extsep.join(splt[:-1]) if len(splt) > 1 else splt[0]
 
 
 def get_dtype(depth, is_complex, signed=True):
@@ -32,7 +30,7 @@ def get_dtype(depth, is_complex, signed=True):
     if depth == 1 and not is_complex:
         return np.uint8
     elif depth == 2 and not is_complex:
-        return np.uint16 if signed else np.int16
+        return np.uint16 if not signed else np.int16
     elif depth == 4 and not is_complex:
         return np.float32
     elif depth == 8 and not is_complex:
@@ -58,7 +56,7 @@ def get_gdal_dtype(depth, is_complex, signed=True):
     if depth == 1 and not is_complex:
         return gdal.GDT_Byte
     elif depth == 2 and not is_complex:
-        return gdal.GDT_UInt16 if signed else gdal.GDT_Int16
+        return gdal.GDT_UInt16 if not signed else gdal.GDT_Int16
     elif depth == 4 and not is_complex:
         return gdal.GDT_Float32
     elif depth == 8 and not is_complex:
@@ -103,3 +101,29 @@ def gdal_to_numpy_datatype(gdal_datatype):
         return np.complex128
     else:
         raise AssertionError("Data type '%i' is not recognized" % gdal_datatype)
+
+
+def numpy_to_gdal_datatype(dtype):
+    """
+    Method to convert numpy data type to gdal dtype
+    """
+    if dtype == np.uint8:
+        return gdal.GDT_Byte
+    elif dtype == np.int16:
+        return gdal.GDT_Int16
+    elif dtype == np.int32:
+        return gdal.GDT_Int32
+    elif dtype == np.uint16:
+        return gdal.GDT_UInt16
+    elif dtype == np.uint32:
+        return gdal.GDT_UInt32
+    elif dtype == np.float32:
+        return gdal.GDT_Float32
+    elif dtype == np.float64:
+        return gdal.GDT_Float64
+    elif dtype == np.complex64:
+        return gdal.GDT_CFloat32
+    elif dtype == np.complex128:
+        return gdal.GDT_CFloat64
+    else:
+        raise AssertionError("Data type '%i' is not recognized" % dtype)
