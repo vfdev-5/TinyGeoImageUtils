@@ -54,7 +54,7 @@ plt.show()
 
 and 
 
-```
+```python
 import numpy as np
 import matplotlib.pyplot as plt
 from gimg import GeoImage
@@ -82,7 +82,7 @@ Application to write tiles from input single image or a folder of images.
 
 Generate tiles of constant size with overlapping.
 
-```
+```bash
 >  tile_generator const_size --help
 
 Usage: tile_generator const_size [OPTIONS] INPUT_DIR_OR_FILE OUTPUT_DIR
@@ -98,7 +98,7 @@ Options:
   --help                   Show this message and exit.
 ```
 For example,
-```
+```bash
 > mkdir examples/tiles
 > tile_generator const_size --extensions="jpg,png" examples/dog.jpg examples/tiles 256 20
 ```
