@@ -18,3 +18,6 @@ install:
 script:
   - py.test --cov gimg --cov-report term-missing
   - flake8
+
+after_success:
+  - coveralls
