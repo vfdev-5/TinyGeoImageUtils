@@ -41,7 +41,7 @@ def create_dataset_with_target_is_folder(tempdir, add_garbage_files=False, n=10)
                 f.write('test')
             dataset.append((file_path, cls_id))
         if add_garbage_files:
-            for i in range(n//2):
+            for i in range(n // 2):
                 garbage_filepath = os.path.join(path, "garbage_id_%i.ext3" % i)
                 with open(garbage_filepath, 'w') as f:
                     f.write('test')
@@ -89,7 +89,7 @@ def create_dataset_with_target_is_mask_file(tempdir, add_garbage_files=False, im
         dataset.append((img_filepath, mask_filepath))
 
     if add_garbage_files:
-        for i in range(n//2):
+        for i in range(n // 2):
             garbage_filepath = os.path.join(path, "garbage_id_%i.ext3" % i)
             with open(garbage_filepath, 'w') as f:
                 f.write('test')
@@ -137,11 +137,11 @@ def create_dataset_with_target_is_mask_file2(tempdir, add_garbage_files=False, i
         dataset.append((img_filepath, mask_filepath))
 
     if add_garbage_files:
-        for i in range(n//2):
+        for i in range(n // 2):
             garbage_filepath = os.path.join(img_path, "garbage_id_%i.ext3" % i)
             with open(garbage_filepath, 'w') as f:
                 f.write('test')
-        for i in range(n//2):
+        for i in range(n // 2):
             garbage_filepath = os.path.join(mask_path, "garbage_id_%i.ext4" % i)
             with open(garbage_filepath, 'w') as f:
                 f.write('test')
@@ -171,34 +171,34 @@ def create_potsdam_like_dataset(tempdir):
     mask_path = os.path.join(tempdir, "labels")
     os.mkdir(mask_path)
 
-    image_files = ["top_potsdam_2_10_RGB.tif",  "top_potsdam_4_13_RGB.tif",  "top_potsdam_6_14_RGB.tif",
-        "top_potsdam_2_11_RGB.tif",  "top_potsdam_4_14_RGB.tif",  "top_potsdam_6_15_RGB.tif",
-        "top_potsdam_2_12_RGB.tif",  "top_potsdam_4_15_RGB.tif",  "top_potsdam_6_7_RGB.tif",
-        "top_potsdam_2_13_RGB.tif",  "top_potsdam_5_10_RGB.tif",  "top_potsdam_6_8_RGB.tif",
-        "top_potsdam_2_14_RGB.tif",  "top_potsdam_5_11_RGB.tif",  "top_potsdam_6_9_RGB.tif",
-        "top_potsdam_3_10_RGB.tif",  "top_potsdam_5_12_RGB.tif",  "top_potsdam_7_10_RGB.tif",
-        "top_potsdam_3_11_RGB.tif",  "top_potsdam_5_13_RGB.tif",  "top_potsdam_7_11_RGB.tif",
-        "top_potsdam_3_12_RGB.tif",  "top_potsdam_5_14_RGB.tif",  "top_potsdam_7_12_RGB.tif",
-        "top_potsdam_3_13_RGB.tif",  "top_potsdam_5_15_RGB.tif",  "top_potsdam_7_13_RGB.tif",
-        "top_potsdam_3_14_RGB.tif",  "top_potsdam_6_10_RGB.tif",  "top_potsdam_7_7_RGB.tif",
-        "top_potsdam_4_10_RGB.tif",  "top_potsdam_6_11_RGB.tif",  "top_potsdam_7_8_RGB.tif",
-        "top_potsdam_4_11_RGB.tif",  "top_potsdam_6_12_RGB.tif",  "top_potsdam_7_9_RGB.tif",
-        "top_potsdam_4_12_RGB.tif",  "top_potsdam_6_13_RGB.tif"
-    ]
+    image_files = ["top_potsdam_2_10_RGB.tif", "top_potsdam_4_13_RGB.tif", "top_potsdam_6_14_RGB.tif",
+                   "top_potsdam_2_11_RGB.tif", "top_potsdam_4_14_RGB.tif", "top_potsdam_6_15_RGB.tif",
+                   "top_potsdam_2_12_RGB.tif", "top_potsdam_4_15_RGB.tif", "top_potsdam_6_7_RGB.tif",
+                   "top_potsdam_2_13_RGB.tif", "top_potsdam_5_10_RGB.tif", "top_potsdam_6_8_RGB.tif",
+                   "top_potsdam_2_14_RGB.tif", "top_potsdam_5_11_RGB.tif", "top_potsdam_6_9_RGB.tif",
+                   "top_potsdam_3_10_RGB.tif", "top_potsdam_5_12_RGB.tif", "top_potsdam_7_10_RGB.tif",
+                   "top_potsdam_3_11_RGB.tif", "top_potsdam_5_13_RGB.tif", "top_potsdam_7_11_RGB.tif",
+                   "top_potsdam_3_12_RGB.tif", "top_potsdam_5_14_RGB.tif", "top_potsdam_7_12_RGB.tif",
+                   "top_potsdam_3_13_RGB.tif", "top_potsdam_5_15_RGB.tif", "top_potsdam_7_13_RGB.tif",
+                   "top_potsdam_3_14_RGB.tif", "top_potsdam_6_10_RGB.tif", "top_potsdam_7_7_RGB.tif",
+                   "top_potsdam_4_10_RGB.tif", "top_potsdam_6_11_RGB.tif", "top_potsdam_7_8_RGB.tif",
+                   "top_potsdam_4_11_RGB.tif", "top_potsdam_6_12_RGB.tif", "top_potsdam_7_9_RGB.tif",
+                   "top_potsdam_4_12_RGB.tif", "top_potsdam_6_13_RGB.tif"
+                   ]
 
     mask_files = [
-        "top_potsdam_2_10_label.tif",  "top_potsdam_6_10_label.tif",
-        "top_potsdam_2_11_label.tif",  "top_potsdam_6_11_label.tif",
-        "top_potsdam_2_12_label.tif",  "top_potsdam_6_12_label.tif",
-        "top_potsdam_3_10_label.tif",  "top_potsdam_6_7_label.tif",
-        "top_potsdam_3_11_label.tif",  "top_potsdam_6_8_label.tif",
-        "top_potsdam_3_12_label.tif",  "top_potsdam_6_9_label.tif",
-        "top_potsdam_4_10_label.tif",  "top_potsdam_7_10_label.tif",
-        "top_potsdam_4_11_label.tif",  "top_potsdam_7_11_label.tif",
-        "top_potsdam_4_12_label.tif",  "top_potsdam_7_12_label.tif",
-        "top_potsdam_5_10_label.tif",  "top_potsdam_7_7_label.tif",
-        "top_potsdam_5_11_label.tif",  "top_potsdam_7_8_label.tif",
-        "top_potsdam_5_12_label.tif",  "top_potsdam_7_9_label.tif",
+        "top_potsdam_2_10_label.tif", "top_potsdam_6_10_label.tif",
+        "top_potsdam_2_11_label.tif", "top_potsdam_6_11_label.tif",
+        "top_potsdam_2_12_label.tif", "top_potsdam_6_12_label.tif",
+        "top_potsdam_3_10_label.tif", "top_potsdam_6_7_label.tif",
+        "top_potsdam_3_11_label.tif", "top_potsdam_6_8_label.tif",
+        "top_potsdam_3_12_label.tif", "top_potsdam_6_9_label.tif",
+        "top_potsdam_4_10_label.tif", "top_potsdam_7_10_label.tif",
+        "top_potsdam_4_11_label.tif", "top_potsdam_7_11_label.tif",
+        "top_potsdam_4_12_label.tif", "top_potsdam_7_12_label.tif",
+        "top_potsdam_5_10_label.tif", "top_potsdam_7_7_label.tif",
+        "top_potsdam_5_11_label.tif", "top_potsdam_7_8_label.tif",
+        "top_potsdam_5_12_label.tif", "top_potsdam_7_9_label.tif",
     ]
 
     for f in mask_files:

@@ -25,17 +25,17 @@ def create(width, height, nb_bands, filepath, depth=2, is_complex=False, metadat
     """
     # Write a small test image
     data = np.zeros((height, width, nb_bands), dtype=get_dtype(depth, is_complex))
-    step_h = height//10
-    step_w = width//10
+    step_h = height // 10
+    step_w = width // 10
     for i in range(0, height, step_h):
         for j in range(0, width, step_w):
-            data[i:i+step_h, j:j+step_w, :] += np.random.randint(0, 255, size=(1, 1, nb_bands), dtype=np.uint16)
+            data[i:i + step_h, j:j + step_w, :] += np.random.randint(0, 255, size=(1, 1, nb_bands), dtype=np.uint16)
 
     driver = gdal.GetDriverByName('GTiff')
     dt = get_gdal_dtype(depth, is_complex)
     ds = driver.Create(filepath, width, height, nb_bands, dt)
     for i in range(0, nb_bands):
-        ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
+        ds.GetRasterBand(i + 1).WriteArray(data[:, :, i])
 
     # Add metadata
     if metadata is None:
@@ -52,9 +52,6 @@ def create(width, height, nb_bands, filepath, depth=2, is_complex=False, metadat
         srs.ImportFromEPSG(epsg)
         ds.SetProjection(srs.ExportToWkt())
 
-    src = None
-    ds = None
-    driver = None
     return data
 
 
@@ -73,7 +70,7 @@ def create_synthetic_image_file(local_temp_folder, shape, depth, is_complex):
 
 def create_virt_image(w, h, c, dtype):
     # Create a synthetic gdal dataset
-    data = np.arange(0, w*h*c, dtype=dtype).reshape((h, w, c))
+    data = np.arange(0, w * h * c, dtype=dtype).reshape((h, w, c))
     driver = gdal.GetDriverByName('MEM')
     gdal_dtype = get_gdal_dtype(data[0, 0, 0].itemsize,
                                 data[0, 0, 0].dtype == np.complex64 or
@@ -81,5 +78,5 @@ def create_virt_image(w, h, c, dtype):
                                 signed=False if dtype in (np.uint8, np.uint16) else True)
     ds = driver.Create('', w, h, c, gdal_dtype)
     for i in range(0, c):
-        ds.GetRasterBand(i+1).WriteArray(data[:, :, i])
+        ds.GetRasterBand(i + 1).WriteArray(data[:, :, i])
     return ds, data

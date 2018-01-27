@@ -120,13 +120,13 @@ class TestGeoImage(TestCase):
 
     def test_compute_geo_transform(self):
         geo_extent = [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0]]
-        true_geo_transform = [0.0, 1.0/99.0, -1.0/99.0, 1.0, -1.0/99.0, -1.0/99.0]
+        true_geo_transform = [0.0, 1.0 / 99.0, -1.0 / 99.0, 1.0, -1.0 / 99.0, -1.0 / 99.0]
         geo_transform = compute_geo_transform(geo_extent, (100, 100))
         self.assertLess(np.sum(np.abs(geo_transform - true_geo_transform)), 1e-10,
                         "{} vs {}".format(geo_transform, true_geo_transform))
 
     def test_compute_geo_extent(self):
-        geo_transform = [0.0, 1.0/99.0, -1.0/99.0, 1.0, -1.0/99.0, -1.0/99.0]
+        geo_transform = [0.0, 1.0 / 99.0, -1.0 / 99.0, 1.0, -1.0 / 99.0, -1.0 / 99.0]
         true_geo_extent = [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0], [-1.0, 0.0]]
         geo_extent = compute_geo_extent(geo_transform, (100, 100))
         self.assertLess(np.sum(np.abs(geo_extent - true_geo_extent)), 1e-10,

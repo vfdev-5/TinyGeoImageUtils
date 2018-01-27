@@ -12,7 +12,9 @@ install:
   - pip install numpy
   - pip install gdal==1.10.0
   - python setup.py install
+  - pip install flake8 coveralls pytest-cov
 
 # command to run tests
 script:
-  - py.test tests/
+  - py.test --cov gimg --cov-report term-missing
+  - flake8

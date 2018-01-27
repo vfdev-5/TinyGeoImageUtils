@@ -111,18 +111,5 @@ class TestCliModule(TestCase):
         self._test_write_to_file_no_geo('fng1.png', np.uint8, (50, 50, 3))
 
 
-class TestTileGeneratorCli(TestCase):
-
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-        self.filepath = os.path.join("..", "examples", "dog.jpg")
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    def test_(self):
-        pass
-
-
 if __name__ == "__main__":
     main()
