@@ -315,7 +315,8 @@ class GeoImage:
         pts = np.array([[0, 0], [w - 1, 0], [w - 1, h - 1], [0, h - 1]])
         return self.transform(pts, "pix2geo")
 
-    def get_data(self, src_rect=None, dst_width=None, dst_height=None, nodata_value=0, dtype=None, select_bands=None):
+    def get_data(self, src_rect=None, dst_width=None, dst_height=None,
+                 nodata_value=None, dtype=None, select_bands=None):
         """
         Method to read data from image
         :param src_rect: is source extent in pixels : [x,y,w,h] where (x,y) is top-left corner.
@@ -373,6 +374,7 @@ class GeoImage:
         band_indices = range(self.shape[2]) if select_bands is None else select_bands
         nb_bands = len(band_indices)
 
+        nodata_value = 0 if nodata_value is None else nodata_value
         if dtype is None:
             datatype = gdal_to_numpy_datatype(self._dataset.GetRasterBand(1).DataType)
             datatype = update_dtype(datatype, nodata_value)

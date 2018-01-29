@@ -33,6 +33,7 @@ class BaseGeoImageTiler(object):
     def __init__(self, geo_image, tile_size=(1024, 1024), scale=1):
         assert isinstance(geo_image, GeoImage), logger.error("geo_image argument should be instance of GeoImage")
         assert len(tile_size) == 2, logger.error("tile_size argument should be a tuple (sx, sy)")
+        assert type(scale) == int, "Argument type should be integer"
 
         self._geo_image = geo_image
         self.tile_size = tile_size
@@ -104,7 +105,7 @@ class GeoImageTiler(BaseGeoImageTiler):
         Tiles of maximum size `(tile_size[0], tile_size[1])` are extracted with a four-sided overlapping (overlapping)
 
         There are two options to produce tile:
-        a) `include_nodata=True`: All tiles have the same size `tile_size` and nodata values are filled with
+        a) `nodata_value=0`: All tiles have the same size `tile_size` and nodata values are filled with
         `nodata_value`.
         For example, the first top-left tile starts outside the image
         <--- tile_size[0] -->
@@ -139,7 +140,7 @@ class GeoImageTiler(BaseGeoImageTiler):
         y_tile_offset = j*(tile_size[1] - overlapping) - overlapping
         ```
 
-        b) `include_nodata=False`: All tiles have the same size `tile_size`, except boundary tiles.
+        b) `nodata_value=None`: All tiles have the same size `tile_size`, except boundary tiles.
         For example, the first top-left tile starts at (0,0) of the image
 
         tile_size[0] - overlapping
@@ -198,7 +199,7 @@ class GeoImageTiler(BaseGeoImageTiler):
                 assert instanceof(tile, np.ndarray), "..."
 
 
-        If the option include_nodata=False, then at the boundaries the outside image overlapping is not added.
+        If the option nodata_value=None, then at the boundaries the outside image overlapping is not added.
         For example, the 1st top-left tile looks like
          tile_size[0] - overlapping
             <--------------->
@@ -213,8 +214,7 @@ class GeoImageTiler(BaseGeoImageTiler):
 
     """
 
-    def __init__(self, geo_image, tile_size=(1024, 1024), overlapping=256,
-                 include_nodata=False, nodata_value=0, scale=1):
+    def __init__(self, geo_image, tile_size=(1024, 1024), overlapping=256, nodata_value=None, scale=1):
 
         super(GeoImageTiler, self).__init__(geo_image, tile_size, scale)
         assert overlapping >= 0 and 2 * overlapping < min(tile_size[0], tile_size[1]), \
@@ -226,7 +226,6 @@ class GeoImageTiler(BaseGeoImageTiler):
         self.nx = GeoImageTiler._compute_number_of_tiles(self.tile_size[0], w, overlapping)
         self.ny = GeoImageTiler._compute_number_of_tiles(self.tile_size[1], h, overlapping)
         self._maxIndex = self.nx * self.ny
-        self.include_nodata = include_nodata
         self.nodata_value = nodata_value
 
     @staticmethod
@@ -282,7 +281,7 @@ class GeoImageTiler(BaseGeoImageTiler):
         x_tile_offset = x_tile_index * (self.tile_size[0] - self.overlapping) - self.overlapping
         y_tile_offset = y_tile_index * (self.tile_size[1] - self.overlapping) - self.overlapping
 
-        if not self.include_nodata:
+        if self.nodata_value is None:
             if x_tile_index == 0:
                 x_tile_offset = 0
                 x_tile_size -= self.overlapping
@@ -326,7 +325,6 @@ class GeoImageTilerConstSize(BaseGeoImageTiler):
         super(GeoImageTilerConstSize, self).__init__(geo_image, tile_size, scale)
         assert 0 <= min_overlapping < min(tile_size[0], tile_size[1]), \
             logger.error("minimal overlapping should be between 0 and min tile_size")
-        assert type(scale) == int, "Argument type should be integer"
 
         self.min_overlapping = min_overlapping
         h = self._geo_image.shape[0] * 1.0 / self.scale

@@ -41,7 +41,7 @@ class TestGeoImageTiler(TestCase):
 
         def _test(tile_size):
             tiled_image = np.zeros(self.geo_image.shape)
-            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=0, include_nodata=False)
+            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=0)
             self.assertTrue(tiles.nx, int(np.ceil(tiled_image.shape[1] / tile_size[0])))
             self.assertTrue(tiles.ny, int(np.ceil(tiled_image.shape[0] / tile_size[1])))
             for tile, x, y in tiles:
@@ -59,7 +59,7 @@ class TestGeoImageTiler(TestCase):
     # def test_tiling_no_overlapping_no_nodata_with_scale(self):
     #     tile_size = (32, 32)
     #     overlapping = 0
-    #     scale = 1.234
+    #     scale = 1.2
     #
     #     def _f(_x):
     #         return int(np.ceil(_x))
@@ -73,8 +73,7 @@ class TestGeoImageTiler(TestCase):
     #     logging.debug("geo_image.shape: {}".format(self.geo_image.shape))
     #
     #     tiles = GeoImageTiler(self.geo_image, tile_size=tile_size,
-    #                           overlapping=overlapping,
-    #                           include_nodata=False, scale=scale)
+    #                           overlapping=overlapping, scale=scale)
     #     for tile, x, y in tiles:
     #         # Offset is given for the original image
     #         logging.debug("-- tile, x, y | {}, {}, {}".format(tile.shape, x, y))
@@ -97,7 +96,7 @@ class TestGeoImageTiler(TestCase):
             w = int(np.ceil(self.geo_image.shape[1] * 1.0 / tile_size[0])) * tile_size[0]
             nc = self.geo_image.shape[2]
             tiled_image = np.zeros((h, w, nc))
-            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=True)
+            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, nodata_value=0)
             for tile, x, y in tiles:
                 tiled_image[y:y + tile_size[1], x:x + tile_size[0], :] = tile
 
@@ -116,7 +115,7 @@ class TestGeoImageTiler(TestCase):
         def _test(tile_size, overlapping):
             h, w, nc = self.geo_image.shape
             tiled_image = np.zeros((h, w, nc))
-            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=False)
+            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping)
             for tile, x, y in tiles:
                 if x == 0:
                     xend = tile_size[0] - overlapping
@@ -157,7 +156,7 @@ class TestGeoImageTiler(TestCase):
             w = nx * tile_size[0]
             nc = self.geo_image.shape[2]
             tiled_image = np.zeros((h, w, nc))
-            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=True)
+            tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, nodata_value=0)
             self.assertTrue(tiles.nx, nx)
             self.assertTrue(tiles.ny, ny)
             for tile, x, y in tiles:
