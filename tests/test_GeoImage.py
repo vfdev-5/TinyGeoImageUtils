@@ -11,6 +11,7 @@ import numpy as np
 
 # GDAL
 from osgeo.gdal import __version__ as gdal_version
+import gdalconst
 
 # Project
 from gimg import GeoImage
@@ -32,6 +33,17 @@ class TestGeoImage(TestCase):
         # Delete temp directory
         shutil.rmtree(self.local_temp_folder)
 
+    def test_initialization_filename(self):
+
+        with self.assertRaises(AssertionError):
+            gimage = GeoImage("")
+
+        with self.assertRaises(AssertionError):
+            gimage = GeoImage(1234)
+
+        with self.assertRaises(AssertionError):
+            gimage = GeoImage("Test")
+
     def test_with_synthetic_image(self):
         is_complex = False
         shape = (120, 100, 2)
@@ -40,6 +52,17 @@ class TestGeoImage(TestCase):
                                                                                                 shape, depth,
                                                                                                 is_complex)
         gimage = GeoImage(filepath)
+
+        # Test attribute types:
+        self.assertIsInstance(gimage.subsets, tuple)
+        self.assertIsInstance(gimage.geo_extent, np.ndarray)
+        self.assertIsInstance(gimage.shape, tuple)
+        self.assertIsInstance(gimage.metadata, dict)
+        self.assertIsInstance(gimage.projection, str)
+        self.assertIsInstance(gimage.gcp_projection, str)
+        if gimage.gcps is not None:
+            self.assertIsInstance(gimage.gcps, tuple)
+
         if self.gdal_version_major > 1:
             self.assertTrue(check_metadata(metadata, gimage.metadata),
                             "{} vs {}".format(metadata, gimage.metadata))
@@ -131,6 +154,25 @@ class TestGeoImage(TestCase):
         geo_extent = compute_geo_extent(geo_transform, (100, 100))
         self.assertLess(np.sum(np.abs(geo_extent - true_geo_extent)), 1e-10,
                         "{} vs {}".format(geo_extent, true_geo_extent))
+
+    def test_resampling_alg(self):
+        dataset, data = create_virt_image(100, 120, 5, np.float32)
+        gimage = GeoImage.from_dataset(dataset)
+        resample_algs = [
+            gdalconst.GRIORA_NearestNeighbour,
+            gdalconst.GRIORA_Average,
+            gdalconst.GRIORA_Bilinear,
+            gdalconst.GRIORA_Cubic,
+            gdalconst.GRIORA_CubicSpline,
+            gdalconst.GRIORA_Gauss,
+            gdalconst.GRIORA_Lanczos
+        ]
+        for a in resample_algs:
+            data = gimage.get_data(dst_width=50, resample_alg=a)
+            self.assertTrue(data is not None)
+
+    def test_with_synthetic_image_with_subsets(self):
+        pass
 
 
 if __name__ == "__main__":

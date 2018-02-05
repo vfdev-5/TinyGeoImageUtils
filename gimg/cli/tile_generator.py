@@ -52,7 +52,8 @@ def run_const_size_task(filepath, output_dir, tile_size, min_overlapping, output
 @click.option('--extensions', type=str, default=None,
               help="String of file extensions to select (if input is a directory), e.g. 'jpg,png,tif'")
 @click.option('--output_extension', type=str, default="tif", help="Output tile file extension")
-@click.option('--scale', type=float, help="Scale input before tiling")
+@click.option('--scale', type=float,
+              help="Scale of input data, e.g. scale=0.5 produce tiles with 2x larger extent")
 @click.option('--n_workers', default=4, type=int, help="Number of workers in the processing pool [default=4]")
 @click.option('-q', '--quiet', is_flag=True, help='Disable verbose mode')
 def run_const_size_tiler(input_dir_or_file, output_dir, tile_size_in_pixels, min_overlapping_in_pixels, extensions,

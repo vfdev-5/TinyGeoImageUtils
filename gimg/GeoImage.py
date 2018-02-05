@@ -24,6 +24,25 @@ class GeoImage:
     Wrapper structure to GDAL Dataset
     Requires GDAL >= 1.11
 
+    Attributes:
+        shape (tuple) shape of input image, e.g. (h, w, c)
+        projection (str) image projection if defined, otherwise ''
+        geo_extent (ndarray) image geo extent in lat/lon if available
+            [[top-left_x, top-left_y],
+            [top-right_x, top-right_y],
+            [bottom-left_x, bottom-left_y],
+            [bottom-right_x, bottom-right_y]]
+            or None otherwise
+        metadata (dict) image metadata
+        gcps (tuple) list of ground control points (GCP)
+        gcp_projection (str) GCP projection if defined, otherwise ''
+        subsets (tuple) list of available subsets in the image if available
+
+        _dataset (gdal.Dataset) image associated GDAL dataset
+        _pix2geo (gdal.Transformer) object to transform pixel points into WGS84 geographical points (long/lat)
+        _pix2proj (gdal.Transformer) object to transform pixel points into image projection points, e.g meters, etc
+
+
     Usage :
     ```
         gimage = GeoImage('path/to/geo/image/filename')
@@ -45,7 +64,7 @@ class GeoImage:
 
         # Display image gcps and its project:
         print gimage.gcps
-        # [[pixel_1_x, pixel_1_y, gcp_1_x, gcp_1_y, gcp_1_z], [pixel_2_x, pixel_2_y, gcp_2_x, gcp_2_y, gcp_2_z], ...]
+        # ((pixel_1_x, pixel_1_y, gcp_1_x, gcp_1_y, gcp_1_z), (pixel_2_x, pixel_2_y, gcp_2_x, gcp_2_y, gcp_2_z), ...)
         # or []
         print gimage.gcp_projection
         #
@@ -76,27 +95,27 @@ class GeoImage:
 
 
         # if image contains subdataset : (hdf5, netcdf files)
-        print gimage.has_subsets()
+        print(len(gimage.subsets) > 0)
         # True or False
-        print gimage.subset_count()
-        # 0, 1, 2, 3, 4, ...
-        gimage_subset_0 = gimage.get_subset_geoimage(0)
+        print(len(gimage.subsets))
+        # 2
+        gimage_subset_0 = gimage.subset[0]
 
         # Specific information can be acquired directly from gdal dataset
         ds = gimage.get_dataset()
     ```
     """
 
-    def __init__(self, filename=""):
+    def __init__(self, filename):
         """
         Initialize GeoImage
         :param filename: input image filename
         """
-        self.close()
-        if len(filename) > 0:
-            self.open(filename)
+        assert isinstance(filename, str) and len(filename) > 0, "Filename should be a non-empty string"
+        self._reset()
+        self.open(filename)
 
-    def close(self):
+    def _reset(self):
         self._dataset = None
         self.shape = None
         self.projection = ""
@@ -104,26 +123,17 @@ class GeoImage:
         self.metadata = None
         self.gcps = None
         self.gcp_projection = ""
+        self.subsets = []
         self._pix2geo = None
         self._pix2proj = None
-        self._subsets = []
+
 
     @staticmethod
     def from_dataset(dataset):
-        gimage = GeoImage()
+        gimage = GeoImage.__new__(GeoImage)
+        gimage._reset()
         gimage._open(dataset)
         return gimage
-
-    def has_subsets(self):
-        return len(self._subsets) > 0
-
-    def subset_count(self):
-        return len(self._subsets)
-
-    def get_subset_geoimage(self, index):
-        assert 0 <= index < len(self._subsets), \
-            "Subset index %i is out of bounds [0. %i]" % index % len(self._subsets)
-        return self._subsets[index]
 
     def _open(self, dataset):
         subsets = dataset.GetMetadata('SUBDATASETS')
@@ -135,7 +145,8 @@ class GeoImage:
                         logger.error("Failed to open the subset '%s'" % str(subsets[item]))
                         continue
                     subset_image = GeoImage.from_dataset(subset)
-                    self._subsets.append(subset_image)
+                    self.subsets.append(subset_image)
+            self.subsets = tuple(self.subsets)
 
         self._dataset = dataset
         self.shape = (self._dataset.RasterYSize, self._dataset.RasterXSize, self._dataset.RasterCount)
@@ -157,10 +168,10 @@ class GeoImage:
         assert dataset is not None, "Failed to open the file: %s " % filename
         self._open(dataset)
 
-    def get_image_resolution_in_degrees(self):
-        assert self._dataset is not None, "Dataset is None"
-        geotransform = self._dataset.GetGeoTransform()
-        return abs(geotransform[1]), abs(geotransform[5])
+    # def get_image_resolution_in_degrees(self):
+    #     assert self._dataset is not None, "Dataset is None"
+    #     geotransform = self._dataset.GetGeoTransform()
+    #     return abs(geotransform[1]), abs(geotransform[5])
 
     def transform(self, points, option="pix2geo"):
         """
@@ -316,7 +327,7 @@ class GeoImage:
         return self.transform(pts, "pix2geo")
 
     def get_data(self, src_rect=None, dst_width=None, dst_height=None,
-                 nodata_value=None, dtype=None, select_bands=None):
+                 nodata_value=None, dtype=None, select_bands=None, resample_alg=0):
         """
         Method to read data from image
         :param src_rect: is source extent in pixels : [x,y,w,h] where (x,y) is top-left corner.
@@ -326,6 +337,13 @@ class GeoImage:
         :param nodata_value: value to fill out of bounds pixels with.
         :param dtype: force type of returned numpy array
         :param select_bands: tuple of band indices (zero-based) to select from dataset, e.g. [0, 3, 4].
+        :param resample_alg: resampling algorithm to apply if data is transformed:
+            Possible values:
+                - gdalconst.GRIORA_NearestNeighbour (default)
+                - gdalconst.GRIORA_Bilinear
+                - gdalconst.GRIORA_Cubic
+                - gdalconst.GRIORA_CubicSpline
+                - gdalconst.GRIORA_Lanczos
         Returns a numpy array
         """
         assert self._dataset is not None, "Dataset is None"
@@ -390,7 +408,7 @@ class GeoImage:
                                     src_req_extent[1],
                                     src_req_extent[2],
                                     src_req_extent[3],
-                                    r[2], r[3])
+                                    r[2], r[3], resample_alg=resample_alg)
             out[r[1]:r[1] + r[3], r[0]:r[0] + r[2], i] = data[:, :]
 
         return out
