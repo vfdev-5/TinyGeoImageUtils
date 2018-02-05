@@ -44,12 +44,15 @@ class TestGeoImageTiler(TestCase):
             tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=0, include_nodata=False)
             self.assertTrue(tiles.nx, int(np.ceil(tiled_image.shape[1] / tile_size[0])))
             self.assertTrue(tiles.ny, int(np.ceil(tiled_image.shape[0] / tile_size[1])))
+            counter = 0
             for tile, x, y in tiles:
                 tiled_image[y:y + tile_size[1], x:x + tile_size[0], :] = tile
+                counter += 1
 
             err = float(np.sum(tiled_image - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32))
         _test((40, 40))
@@ -98,13 +101,16 @@ class TestGeoImageTiler(TestCase):
             nc = self.geo_image.shape[2]
             tiled_image = np.zeros((h, w, nc))
             tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=True)
+            counter = 0
             for tile, x, y in tiles:
                 tiled_image[y:y + tile_size[1], x:x + tile_size[0], :] = tile
+                counter += 1
 
             h, w, nc = self.geo_image.shape
             err = float(np.sum(tiled_image[:h, :w, :] - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32))
         _test((40, 40))
@@ -117,6 +123,7 @@ class TestGeoImageTiler(TestCase):
             h, w, nc = self.geo_image.shape
             tiled_image = np.zeros((h, w, nc))
             tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=False)
+            counter = 0
             for tile, x, y in tiles:
                 if x == 0:
                     xend = tile_size[0] - overlapping
@@ -129,11 +136,13 @@ class TestGeoImageTiler(TestCase):
                     yend = min(y + tile_size[1], h)
 
                 tiled_image[y:yend, x:xend, :] = tile
+                counter += 1
 
             self.assertTrue(tiled_image.shape == self.geo_image.shape)
             err = float(np.sum(tiled_image - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32), 8)
         _test((32, 32), 12)
@@ -160,6 +169,7 @@ class TestGeoImageTiler(TestCase):
             tiles = GeoImageTiler(self.geo_image, tile_size=tile_size, overlapping=overlapping, include_nodata=True)
             self.assertTrue(tiles.nx, nx)
             self.assertTrue(tiles.ny, ny)
+            counter = 0
             for tile, x, y in tiles:
                 x += overlapping
                 xend = x + tile_size[0]
@@ -167,6 +177,7 @@ class TestGeoImageTiler(TestCase):
                 yend = y + tile_size[1]
 
                 tiled_image[y:yend, x:xend, :] = tile
+                counter += 1
 
             h, w, nc = self.geo_image.shape
             x = overlapping
@@ -176,6 +187,7 @@ class TestGeoImageTiler(TestCase):
             err = float(np.sum(tiled_image[y:yend, x:xend, :] - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32), 8)
         _test((32, 32), 12)
@@ -222,13 +234,16 @@ class TestGeoImageTilerConstSize(TestCase):
             tiles = GeoImageTilerConstSize(self.geo_image, tile_size=tile_size, min_overlapping=0)
             self.assertTrue(tiles.nx, int(np.ceil(tiled_image.shape[1] / tile_size[0])))
             self.assertTrue(tiles.ny, int(np.ceil(tiled_image.shape[0] / tile_size[1])))
+            counter = 0
             for tile, x, y in tiles:
                 self.assertTrue(tile.shape[:2] == (tile_size[1], tile_size[0]))
                 tiled_image[y:y + tile_size[1], x:x + tile_size[0], :] = tile
+                counter += 1
 
             err = float(np.sum(tiled_image - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32))
         _test((40, 40))
@@ -241,14 +256,17 @@ class TestGeoImageTilerConstSize(TestCase):
             h, w, nc = self.geo_image.shape
             tiled_image = np.zeros((h, w, nc))
             tiles = GeoImageTilerConstSize(self.geo_image, tile_size=tile_size, min_overlapping=overlapping)
+            counter = 0
             for tile, x, y in tiles:
                 self.assertTrue(tile.shape[:2] == (tile_size[1], tile_size[0]))
                 tiled_image[y:y + tile_size[1], x:x + tile_size[0], :] = tile
+                counter += 1
 
             self.assertTrue(tiled_image.shape == self.geo_image.shape)
             err = float(np.sum(tiled_image - self.geo_image.get_data()))
             logging.debug("Err : %f" % err)
             self.assertTrue(np.abs(err) < 1e-10)
+            self.assertEqual(counter, len(tiles))
 
         _test((32, 32), 8)
         _test((32, 32), 12)
