@@ -38,11 +38,14 @@ class BaseGeoImageTiler(object):
         self.tile_size = tile_size
         self.scale = scale
         self._index = 0
-        self._maxIndex = 0
+        self._max_index = 0
         self.nodata_value = 0
 
     def __iter__(self):
         return self
+
+    def __len__(self):
+        return self._max_index
 
     def get_lin_index(self):
         return self._index - 1
@@ -69,7 +72,7 @@ class BaseGeoImageTiler(object):
         """
             Method to get current tile
         """
-        if self._index < 0 or self._index >= self._maxIndex:
+        if self._index < 0 or self._index >= self._max_index:
             raise StopIteration()
 
         # Define ROI to extract
@@ -77,7 +80,7 @@ class BaseGeoImageTiler(object):
         # extent = [xoffset, yoffset, tile_size_x, tile_size_y]
         scaled_extent = [floor_int(e * self.scale) for e in extent]
         logger.debug("{}/{} = ({},{}) | extent={}".format(self._index,
-                                                          self._maxIndex, x_tile_index, y_tile_index, scaled_extent))
+                                                          self._max_index, x_tile_index, y_tile_index, scaled_extent))
 
         # Extract data
         dst_width = ceil_int(extent[2])  # ceil need when tile size is computed (image_size/scale - offset)
@@ -225,7 +228,7 @@ class GeoImageTiler(BaseGeoImageTiler):
         w = self._geo_image.shape[1] * 1.0 / self.scale
         self.nx = GeoImageTiler._compute_number_of_tiles(self.tile_size[0], w, overlapping)
         self.ny = GeoImageTiler._compute_number_of_tiles(self.tile_size[1], h, overlapping)
-        self._maxIndex = self.nx * self.ny
+        self._max_index = self.nx * self.ny
         self.include_nodata = include_nodata
         self.nodata_value = nodata_value
 
@@ -338,7 +341,7 @@ class GeoImageTilerConstSize(BaseGeoImageTiler):
                                                                                      self.nx)
         self.float_overlapping_y = GeoImageTilerConstSize._compute_float_overlapping(self.tile_size[1], h,
                                                                                      self.ny)
-        self._maxIndex = self.nx * self.ny
+        self._max_index = self.nx * self.ny
 
     @staticmethod
     def _compute_number_of_tiles(tile_size, image_size, min_overlapping):
